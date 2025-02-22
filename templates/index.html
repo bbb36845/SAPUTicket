@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ticket System</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tickets</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Lejer</th>
+                <th>Beskrivelse</th>
+                <th>Status</th>
+                <th>Udlejer</th>
+                <th>Håndværker</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr>
+                <td>{{ ticket.id }}</td>
+                <td>{{ ticket.lejer }}</td>
+                <td>{{ ticket.beskrivelse }}</td>
+                <td>{{ ticket.status }}</td>
+                <td>{{ ticket.udlejer }}</td>
+                <td>{{ ticket.håndværker }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
