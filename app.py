@@ -2,11 +2,15 @@ import sqlite3
 import os
 from functools import wraps
 from flask import Flask, render_template, request, redirect, flash
-import flask_login  # Flask-Login
+import flask_login
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'en_super_hemmelig_nøgle'  # Skift dette i produktion!
+
+# Brug absolut sti til databasen OG schema.sql
+DATABASE = os.path.join(app.root_path, 'tickets.db')
+SCHEMA = os.path.join(app.root_path, 'schema.sql')
 
 # --- Flask-Login opsætning ---
 login_manager = flask_login.LoginManager()
@@ -23,13 +27,6 @@ def load_user(user_id):
         return User(user['id'], user['username'], user['password_hash'], user['role'])
     return None
 
-# --- Resten af dine imports, konstanter (DATABASE, SCHEMA) ---
-# Brug absolut sti til databasen OG schema.sql
-DATABASE = os.path.join(app.root_path, 'tickets.db')
-SCHEMA = os.path.join(app.root_path, 'schema.sql')
-#print(f"DATABASE sti: {DATABASE}")  # Debugging - fjern senere
-#print(f"SCHEMA sti: {SCHEMA}")  # Debugging - fjern senere
-
 # --- User model (til Flask-Login) ---
 class User(flask_login.UserMixin):
     def __init__(self, id, username, password_hash, role=None):
@@ -39,25 +36,25 @@ class User(flask_login.UserMixin):
         self.role = role
 
 def get_db_connection():
-    #print(f"Forsøger at forbinde til: {DATABASE}")  # Debugging - fjern senere
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    #print("init_db() kaldt")  # Debugging - fjern senere
     try:
         conn = get_db_connection()
         with open(SCHEMA, 'r') as f:
-            #print(f"Åbner schemafil: {SCHEMA}") #Mere debugging - fjern senere
-            sql_script = f.read()
-            #print(f"SQL script:\n{sql_script}") # Mere debugging - fjern senere
-            conn.executescript(sql_script)
+            conn.executescript(f.read())
         conn.commit()
         conn.close()
-        #print("init_db() afsluttet (forhåbentlig uden fejl)")  # Debugging - fjern senere
+        print("init_db() afsluttet uden fejl.") # VIGTIGT: Behold denne!
     except Exception as e:
         print(f"Fejl i init_db(): {e}")  # VIGTIGT: Fang og print evt. fejl
+
+
+# TVING init_db() til at køre - fjern betingelsen.
+init_db()
+
 
 def get_user(username):
     conn = get_db_connection()
@@ -67,13 +64,6 @@ def get_user(username):
         return User(user['id'], user['username'], user['password_hash'], user['role'])
     return None
 
-# Kør init_db() HVIS databasen ikke eksisterer.
-if not os.path.exists(DATABASE):
-    #print(f"Databasefilen findes ikke: {DATABASE}") # Debugging - fjern senere
-    init_db()
-else:
-    pass
-    #print(f"Databasefilen findes: {DATABASE}") # Debugging - fjern senere
 
 # --- Midlertidig kode til at oprette en testbruger ---
 conn = get_db_connection()
@@ -87,17 +77,14 @@ if conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0:
 conn.close()
 # --- Slut på midlertidig kode ---
 
-# Fjernet: requires_auth decorator
-
 
 @app.route("/")
 def index():
     conn = get_db_connection()
     try:
         tickets = conn.execute('SELECT * FROM tickets').fetchall()
-        #print(f"Hentede tickets: {tickets}") # Debugging - fjern senere
     except sqlite3.OperationalError as e:
-        print(f"Fejl ved hentning af tickets: {e}") #Mere debugging.
+        print(f"Fejl ved hentning af tickets: {e}")
         tickets = []
     finally:
         conn.close()
@@ -136,7 +123,6 @@ def create_ticket():
     return redirect("/")
 
 @app.route("/admin")
-#@requires_auth # Erstat med @login_required
 @flask_login.login_required
 def admin():
     conn = get_db_connection()
@@ -159,7 +145,6 @@ def delete_ticket(ticket_id):
     return redirect("/admin")
 
 @app.route("/edit/<int:ticket_id>", methods=["GET"])
-#@requires_auth # Erstat med @login_required
 @flask_login.login_required
 def edit_ticket(ticket_id):
     conn = get_db_connection()
@@ -174,7 +159,6 @@ def edit_ticket(ticket_id):
 
 
 @app.route("/edit/<int:ticket_id>", methods=["POST"])
-#@requires_auth # Erstat med @login_required
 @flask_login.login_required
 def update_ticket(ticket_id):
     lejer = request.form["lejer"]
@@ -201,7 +185,6 @@ def update_ticket(ticket_id):
     return redirect("/admin")
 
 @app.route("/ticket/<int:ticket_id>")
-#@requires_auth # Erstat med @login_required
 @flask_login.login_required
 def ticket_detail(ticket_id):
     conn = get_db_connection()
