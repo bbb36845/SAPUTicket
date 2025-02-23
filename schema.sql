@@ -45,21 +45,3 @@ CREATE TABLE tickets (
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (unit_id) REFERENCES units(id)
 );
--- Indsæt testdata (fjern/rediger dette senere)
-
--- Test udlejer (husk at opdatere adgangskoden!)
-#INSERT INTO users (username, password_hash, role) VALUES
-#('udlejer1', 'pbkdf2:sha256:260000$n4qNDxlHI5TIjHa2$f959998959754955b979975f6f77449892b8ff9e5664d9c76c588d9e095a2d8e', 'udlejer');
-
-#INSERT INTO properties (name, owner_id) VALUES
-#('Vedbækhus', (SELECT id FROM users WHERE username = 'udlejer1')),
-#('Andreasens Ejendomme', (SELECT id FROM users WHERE username = 'udlejer1'));
-
-
-#INSERT INTO units (address, property_id) VALUES
-#('Vedbæk Strandvej 1, st. tv.', (SELECT id FROM properties WHERE name = 'Vedbækhus')),
-#('Vedbæk Strandvej 1, st. th.', (SELECT id FROM properties WHERE name = 'Vedbækhus')),
-#('Vedbæk Strandvej 1, 1. tv.', (SELECT id FROM properties WHERE name = 'Vedbækhus')),
-#('Vedbæk Strandvej 1, 1. th.', (SELECT id FROM properties WHERE name = 'Vedbækhus')),
-#('Andreasensvej 2A', (SELECT id FROM properties WHERE name = 'Andreasens Ejendomme')),
-#('Andreasensvej 2B', (SELECT id FROM properties WHERE name = 'Andreasens Ejendomme'));
