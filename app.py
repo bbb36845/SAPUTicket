@@ -214,7 +214,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/logout')
-@flask_login.login_required #Tilføjet login_required decorator
+@flask_login.login_required
 def logout():
     flask_login.logout_user()
     flash('Du er nu logget ud!', 'success')
