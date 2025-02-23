@@ -71,6 +71,19 @@ def get_user(username):
 if not os.path.exists(DATABASE):
     init_db()
 
+# --- Midlertidig kode til at oprette en testbruger ---
+conn = get_db_connection()
+admin_exists = conn.execute('SELECT id FROM users WHERE username = ?', ('admin',)).fetchone()
+if not admin_exists:
+    hashed_password = generate_password_hash('hemmeligt')
+    conn.execute(
+        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+        ('admin', hashed_password, 'admin')
+    )
+    conn.commit()
+conn.close()
+# --- Slut på midlertidig kode ---
+
 @app.route("/")
 def index():
     conn = get_db_connection()
