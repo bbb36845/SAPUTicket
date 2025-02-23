@@ -2,16 +2,41 @@ import sqlite3
 import os
 from functools import wraps
 from flask import Flask, render_template, request, redirect, flash
+import flask_login  # Flask-Login
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'en_super_hemmelig_nøgle'  # Skift dette i produktion!
 
+# --- Flask-Login opsætning ---
+login_manager = flask_login.LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # Fortæl Flask-Login, hvor login-siden er
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    conn.close()
+    if user:
+        return User(user['id'], user['username'], user['password_hash'], user['role'])
+    return None
+
+# --- Resten af dine imports, konstanter (DATABASE, SCHEMA) ---
 # Brug absolut sti til databasen OG schema.sql
 DATABASE = os.path.join(app.root_path, 'tickets.db')
 SCHEMA = os.path.join(app.root_path, 'schema.sql')
 #print(f"DATABASE sti: {DATABASE}")  # Debugging - fjern senere
 #print(f"SCHEMA sti: {SCHEMA}")  # Debugging - fjern senere
 
+# --- User model (til Flask-Login) ---
+class User(flask_login.UserMixin):
+    def __init__(self, id, username, password_hash, role=None):
+        self.id = id
+        self.username = username
+        self.password_hash = password_hash
+        self.role = role
 
 def get_db_connection():
     #print(f"Forsøger at forbinde til: {DATABASE}")  # Debugging - fjern senere
@@ -34,6 +59,13 @@ def init_db():
     except Exception as e:
         print(f"Fejl i init_db(): {e}")  # VIGTIGT: Fang og print evt. fejl
 
+def get_user(username):
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    conn.close()
+    if user:
+        return User(user['id'], user['username'], user['password_hash'], user['role'])
+    return None
 
 # Kør init_db() HVIS databasen ikke eksisterer.
 if not os.path.exists(DATABASE):
@@ -43,14 +75,20 @@ else:
     pass
     #print(f"Databasefilen findes: {DATABASE}") # Debugging - fjern senere
 
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth or not (auth.username == 'admin' and auth.password == 'hemmeligt'):
-            return "Adgang nægtet", 401, {'WWW-Authenticate': 'Basic realm="Login Required"'}
-        return f(*args, **kwargs)
-    return decorated
+# --- Midlertidig kode til at oprette en testbruger ---
+conn = get_db_connection()
+if conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0:
+    hashed_password = generate_password_hash('hemmeligt')
+    conn.execute(
+        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+        ('admin', hashed_password, 'admin')
+    )
+    conn.commit()
+conn.close()
+# --- Slut på midlertidig kode ---
+
+# Fjernet: requires_auth decorator
+
 
 @app.route("/")
 def index():
@@ -72,11 +110,20 @@ def create_ticket():
     beskrivelse = request.form["beskrivelse"]
     udlejer = request.form["udlejer"]
 
+    #Hent user_id fra den bruger der er logget ind:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id FROM users WHERE username = ?", (flask_login.current_user.username,)
+    )
+    user_id = cur.fetchone()[0]
+    conn.close()
+
     conn = get_db_connection()
     try:
         conn.execute(
-            "INSERT INTO tickets (lejer, beskrivelse, status, udlejer) VALUES (?, ?, ?, ?)",
-            (lejer, beskrivelse, "Oprettet", udlejer),
+            "INSERT INTO tickets (lejer, beskrivelse, status, udlejer, user_id) VALUES (?, ?, ?, ?, ?)",
+            (lejer, beskrivelse, "Oprettet", udlejer, user_id),
         )
         conn.commit()
         flash('Ticket oprettet!', 'success')
@@ -89,7 +136,8 @@ def create_ticket():
     return redirect("/")
 
 @app.route("/admin")
-@requires_auth
+#@requires_auth # Erstat med @login_required
+@flask_login.login_required
 def admin():
     conn = get_db_connection()
     tickets = conn.execute('SELECT * FROM tickets').fetchall()
@@ -111,7 +159,8 @@ def delete_ticket(ticket_id):
     return redirect("/admin")
 
 @app.route("/edit/<int:ticket_id>", methods=["GET"])
-@requires_auth
+#@requires_auth # Erstat med @login_required
+@flask_login.login_required
 def edit_ticket(ticket_id):
     conn = get_db_connection()
     ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
@@ -125,7 +174,8 @@ def edit_ticket(ticket_id):
 
 
 @app.route("/edit/<int:ticket_id>", methods=["POST"])
-@requires_auth
+#@requires_auth # Erstat med @login_required
+@flask_login.login_required
 def update_ticket(ticket_id):
     lejer = request.form["lejer"]
     beskrivelse = request.form["beskrivelse"]
@@ -151,7 +201,8 @@ def update_ticket(ticket_id):
     return redirect("/admin")
 
 @app.route("/ticket/<int:ticket_id>")
-@requires_auth
+#@requires_auth # Erstat med @login_required
+@flask_login.login_required
 def ticket_detail(ticket_id):
     conn = get_db_connection()
     ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
