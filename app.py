@@ -76,7 +76,22 @@ if conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0:
     conn.commit()
 conn.close()
 # --- Slut på midlertidig kode ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = get_user(username)
 
+        if user and check_password_hash(user.password_hash, password):
+            flask_login.login_user(user)
+            flash('Du er nu logget ind!', 'success')
+            return redirect('/admin')  # Eller en anden beskyttet side
+        else:
+            flash('Forkert brugernavn eller adgangskode.', 'error')
+            return redirect('/login')
+
+    return render_template('login.html')
 
 @app.route("/")
 def index():
