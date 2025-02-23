@@ -27,6 +27,11 @@ def load_user(user_id):
         return User(user['id'], user['username'], user['password_hash'], user['role'])
     return None
 
+# --- Context Processor ---
+@app.context_processor
+def inject_login():
+    return dict(flask_login=flask_login)
+
 # --- User model (til Flask-Login) ---
 class User(flask_login.UserMixin):
     def __init__(self, id, username, password_hash, role=None):
@@ -47,9 +52,9 @@ def init_db():
             conn.executescript(f.read())
         conn.commit()
         conn.close()
-        print("init_db() afsluttet uden fejl.") # VIGTIGT: Behold denne!
+        print("init_db() afsluttet uden fejl.")
     except Exception as e:
-        print(f"Fejl i init_db(): {e}")  # VIGTIGT: Fang og print evt. fejl
+        print(f"Fejl i init_db(): {e}")
 
 def get_user(username):
     conn = get_db_connection()
