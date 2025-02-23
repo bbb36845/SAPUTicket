@@ -27,6 +27,11 @@ def load_user(user_id):
         return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
     return None
 
+# --- Context Processor ---
+@app.context_processor
+def inject_login():
+    return dict(flask_login=flask_login)
+
 # --- User model (til Flask-Login) ---
 class User(flask_login.UserMixin):
      def __init__(self, id, username, password_hash, role=None, invitation_token=None, invited_by=None, unit_id=None):
@@ -34,8 +39,8 @@ class User(flask_login.UserMixin):
         self.username = username
         self.password_hash = password_hash
         self.role = role
-        self.invitation_token = invitation_token  # Tilføjet
-        self.invited_by = invited_by  # Tilføjet
+        self.invitation_token = invitation_token
+        self.invited_by = invited_by
         self.unit_id = unit_id
 
 def get_db_connection():
