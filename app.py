@@ -199,6 +199,19 @@ def login():
         password = request.form['password']
         user = get_user(username)
 
+        print(f"--- DEBUG: login() ---")  # Debugging
+        print(f"  Indtastet brugernavn: {username}")  # Debugging
+        print(f"  Indtastet adgangskode: {password}")  # Debugging
+
+        if user:
+            print(f"  Bruger fundet: {user.username}")  # Debugging
+            print(f"  Hashed password fra DB: {user.password_hash}")  # Debugging
+            is_valid = check_password_hash(user.password_hash, password)
+            print(f"  Password check resultat: {is_valid}")  # Debugging
+        else:
+            print("  Bruger IKKE fundet.")  # Debugging
+
+
         if user and check_password_hash(user.password_hash, password):
             flask_login.login_user(user)
             flash('Du er nu logget ind!', 'success')
