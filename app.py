@@ -1,4 +1,3 @@
-import secrets
 import sqlite3
 import os
 from functools import wraps
@@ -50,15 +49,30 @@ def get_db_connection():
     return conn
 
 def init_db():
+    print("init_db(): START")  # Mere debugging
     try:
         conn = get_db_connection()
+        print(f"  Forbindelse til database oprettet: {conn}")  # Debugging
         with open(SCHEMA, 'r') as f:
-            conn.executescript(f.read())
+            print(f"  Åbner schemafil: {SCHEMA}") # Debugging
+            sql_script = f.read()
+            print(f"  SQL script læst:\n{sql_script}")  # Debugging - VIS HELE SCRIPTET
+            conn.executescript(sql_script)
         conn.commit()
         conn.close()
-        print("init_db() afsluttet uden fejl.")
+        print("init_db(): Afsluttet UDEN fejl (forhåbentlig)")
     except Exception as e:
         print(f"Fejl i init_db(): {e}")
+        import traceback
+        traceback.print_exc()  # Print hele traceback'en
+    finally:  # Vigtigt: Sørg for, at forbindelsen ALTID lukkes
+        if 'conn' in locals() and conn:
+            conn.close()
+            print("Databaseforbindelse lukket (finally).")
+
+# Kør init_db() HVIS databasen ikke eksisterer.
+if not os.path.exists(DATABASE):
+    init_db()
 
 def get_user(username):
     conn = get_db_connection()
@@ -68,37 +82,20 @@ def get_user(username):
         return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
     return None
 
-# Kør init_db() HVIS databasen ikke eksisterer.
-if not os.path.exists(DATABASE):
-    init_db()
-
-def generate_invitation_token():
-    return secrets.token_urlsafe(32)  # Generer et 32-byte token (sikker og URL-venlig)
-
-# --- Midlertidig kode til at oprette en testbruger ---
-#conn = get_db_connection()
-#admin_exists = conn.execute('SELECT id FROM users WHERE username = ?', ('admin',)).fetchone()
-#if not admin_exists:
-#    hashed_password = generate_password_hash('hemmeligt')
-#    conn.execute(
-#        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-#        ('admin', hashed_password, 'admin')
-#    )
-#    conn.commit()
-#conn.close()
-# --- Slut på midlertidig kode ---
-
 @app.route("/")
 def index():
     conn = get_db_connection()
     try:
-        tickets = conn.execute('SELECT * FROM tickets').fetchall()
+        # FORSØG at hente brugere (ikke tickets)
+        users = conn.execute('SELECT * FROM users').fetchall()
+        print(f"Hentede users: {users}")  # Debugging
+        return f"Antal brugere: {len(users)}" # Simpelt output
+
     except sqlite3.OperationalError as e:
-        print(f"Fejl ved hentning af tickets: {e}")
-        tickets = []
+        print(f"Fejl: {e}")
+        return f"Fejl: {e}"  # Vis fejlen direkte
     finally:
         conn.close()
-    return render_template("index.html", tickets=tickets)
 
 
 @app.route("/create", methods=["POST"])
@@ -234,64 +231,65 @@ def logout():
     return redirect(url_for('index')) # omdiriger til index
 
 @app.route('/register', methods=['GET', 'POST'])
-@flask_login.login_required
+#@flask_login.login_required # Fjern midlertidigt, for test.
 def register():
     # Tjek om brugeren er admin
-    if flask_login.current_user.role != 'admin':
-        flash('Du har ikke tilladelse til at oprette brugere.', 'error')
-        return redirect(url_for('index'))  # Eller en anden passende side
+    #if flask_login.current_user.role != 'admin':
+    #    flash('Du har ikke tilladelse til at oprette brugere.', 'error')
+    #    return redirect(url_for('index'))  # Eller en anden passende side
 
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        role = "lejer"  # Sæt rollen automatisk til "lejer"
-        unit_id = 1 # Hardcoded, skal ændres!
+        #role = request.form['role'] #Ikke længere del af formular.
+        role = "lejer"  # Sæt rollen automatisk til "lejer" - vi ændrer dette senere!
+        unit_id = 1 #Hardcoded, skal ændres.
 
         # --- Validering (start) ---
-        errors = []
+        errors = []  # Opret en liste til at holde styr på fejl
 
         if not username:
             errors.append('Brugernavn er påkrævet.')
         if not password:
             errors.append('Adgangskode er påkrævet.')
         if not confirm_password:
-            errors.append('Bekræft adgangskode er påkrævet.')
+            errors.append('Bekræft adgangskode er påkrævet.')  # Lidt overflødig, da HTML har 'required', men god praksis
         if password != confirm_password:
             errors.append('Adgangskoderne stemmer ikke overens.')
 
+        # Tjek om brugernavn eksisterer (mere effektiv forespørgsel)
         conn = get_db_connection()
         existing_user = conn.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone()
         conn.close()
         if existing_user:
             errors.append('Brugernavnet er allerede i brug.')
 
+        # Hvis der er fejl, vis formularen igen med fejlbeskeder
         if errors:
             for error in errors:
                 flash(error, 'error')
-            return render_template('register.html', username=username)
+            return render_template('register.html', username=username, role=role)  # Send evt. eksisterende input tilbage
         # --- Validering (slut) ---
 
+        # Hash adgangskoden
+        hashed_password = generate_password_hash(password)
 
-        # Generer invitationstoken
-        token = generate_invitation_token()
-
-        # Gem token i databasen (uden at oprette brugeren endnu)
+        # Opret bruger i databasen
         conn = get_db_connection()
         try:
             conn.execute(
-                "INSERT INTO users (username, invitation_token, role, unit_id) VALUES (?, ?, ?, ?)",
-                (username, token, role, unit_id)  # Intet password!
+                "INSERT INTO users (username, password_hash, role, unit_id) VALUES (?, ?, ?, ?)",
+                (username, hashed_password, role, unit_id)
             )
             conn.commit()
-            flash(f'Invitation oprettet! Token: {token}', 'success')  # Vis tokenet (midlertidigt)
-            print(f"Invitation token: {token}") # Skriv token til log.
-            return redirect(url_for('admin'))
+            flash('Bruger oprettet!', 'success')
+            return redirect(url_for('login'))  # Eller en anden passende side (f.eks. en liste over brugere)
         except Exception as e:
-            print(f"Fejl ved oprettelse af invitation: {e}")
-            flash(f'Fejl ved oprettelse af invitation. Se server log for detaljer.', 'error')
-            conn.rollback()
+            print(f"Fejl ved oprettelse af bruger: {e}")
+            flash(f'Fejl ved oprettelse af bruger. Se server log for detaljer.', 'error')  # Mere generel fejlbesked til brugeren
+            conn.rollback()  # Rul tilbage, hvis der sker en fejl
         finally:
             conn.close()
 
-    return render_template('register.html')
+    return render_template('register.html')  # Vis formularen (GET request)
