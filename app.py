@@ -1,6 +1,8 @@
 import sqlite3
 import os  # Importer os modulet
 from flask import Flask, render_template, request, redirect
+from functools import wraps
+
 
 app = Flask(__name__)
 
@@ -39,7 +41,14 @@ if not os.path.exists(DATABASE):
     init_db()
 else:
     print(f"Databasefilen findes: {DATABASE}") # Debugging
-
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not (auth.username == 'admin' and auth.password == 'hemmeligt'):
+            return "Adgang nægtet", 401, {'WWW-Authenticate': 'Basic realm="Login Required"'}
+        return f(*args, **kwargs)
+    return decorated
 @app.route("/")
 def index():
     conn = get_db_connection()
@@ -74,15 +83,12 @@ def create_ticket():
         conn.close()
     return redirect("/")
 @app.route("/admin")
+@requires_auth  # Tilføj denne linje!
 def admin():
-    # MEGET SIMPEL adgangskontrol (IKKE til produktion!)
-    if request.authorization and request.authorization.username == 'admin' and request.authorization.password == 'hemmeligt':
-        conn = get_db_connection()
-        tickets = conn.execute('SELECT * FROM tickets').fetchall()
-        conn.close()
-        return render_template("admin.html", tickets=tickets)
-    else:
-        return "Adgang nægtet", 401  # 401 Unauthorized
+    conn = get_db_connection()
+    tickets = conn.execute('SELECT * FROM tickets').fetchall()
+    conn.close()
+    return render_template("admin.html", tickets=tickets)
 @app.route("/delete/<int:ticket_id>", methods=["POST"])
 def delete_ticket(ticket_id):
     conn = get_db_connection()
