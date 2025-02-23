@@ -62,15 +62,22 @@ def init_db():
 def get_user(username):
     print(f"--- DEBUG: get_user({username}) ---")
     conn = get_db_connection()
-    try:  # Tilføj try/except/finally
-        cursor = conn.cursor()  # Brug en cursor
+    try:
+        cursor = conn.cursor()
+        print(f"  SQL: SELECT * FROM users WHERE username = '{username}'")  # Vis SQL'en (med brugernavn)
         cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
         user_data = cursor.fetchone()
 
-        print(f"  SQL-forespørgsel udført.")  # Debugging
+        print(f"  SQL-forespørgsel udført.")
 
         if user_data:
             print(f"  Bruger fundet i DB (rå data): {user_data}")
+            # --- DEBUG: Vis dataene som dictionary ---
+            print("  Brugerdata som dictionary:")
+            for key, value in user_data.items():
+                print(f"    {key}: {value!r}")  # Brug !r for at vise repræsentation
+            # --- SLUT på DEBUG ---
+
             user = User(user_data['id'], user_data['username'], user_data['password_hash'], user_data['role'], user_data['invitation_token'], user_data['invited_by'], user_data['unit_id'])
             print(f"  User objekt oprettet: {user.username}")
             return user
@@ -78,10 +85,10 @@ def get_user(username):
             print("  Bruger ikke fundet i DB.")
             return None
     except Exception as e:
-        print(f"--- DEBUG: Fejl i get_user(): {e}")  # Vigtigt: Fang og print evt. fejl
+        print(f"--- DEBUG: Fejl i get_user(): {e}")
         import traceback
         traceback.print_exc()
-        return None  # Vigtigt: Returner None ved fejl
+        return None
     finally:
         conn.close()
         print("--- DEBUG: get_user() afsluttes ---")
