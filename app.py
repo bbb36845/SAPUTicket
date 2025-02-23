@@ -60,11 +60,14 @@ def init_db():
         print(f"Fejl i init_db(): {e}")
 
 def get_user(username):
+    print(f"--- DEBUG: get_user({username}) ---") #Tilføjet debugging.
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     conn.close()
     if user:
+        print(f"  Bruger fundet i DB: {user['username']}, hash: {user['password_hash']}") #Tilføjet debugging.
         return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
+    print("  Bruger ikke fundet i DB.") #Tilføjet debugging
     return None
 
 # Kør init_db() HVIS databasen ikke eksisterer.
@@ -194,32 +197,37 @@ def ticket_detail(ticket_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    print("--- DEBUG: login() START ---")  # Helt i starten
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        print(f"  Indtastet brugernavn: {username}")
+        print(f"  Indtastet adgangskode: {password}")
+
         user = get_user(username)
 
-        print(f"--- DEBUG: login() ---")  # Debugging
-        print(f"  Indtastet brugernavn: {username}")  # Debugging
-        print(f"  Indtastet adgangskode: {password}")  # Debugging
-
         if user:
-            print(f"  Bruger fundet: {user.username}")  # Debugging
-            print(f"  Hashed password fra DB: {user.password_hash}")  # Debugging
+            print(f"  Bruger fundet: {user.username}")
+            print(f"  Hashed password fra DB: {user.password_hash}")
             is_valid = check_password_hash(user.password_hash, password)
-            print(f"  Password check resultat: {is_valid}")  # Debugging
+            print(f"  Password check resultat: {is_valid}")
+
+            if is_valid:
+                print("  Logger ind...")  # Debugging
+                flask_login.login_user(user)
+                flash('Du er nu logget ind!', 'success')
+                return redirect('/admin')
+            else:
+                print("  Password forkert.")  # Debugging
+                flash('Forkert brugernavn eller adgangskode.', 'error')
+                return redirect('/login')
         else:
             print("  Bruger IKKE fundet.")  # Debugging
-
-
-        if user and check_password_hash(user.password_hash, password):
-            flask_login.login_user(user)
-            flash('Du er nu logget ind!', 'success')
-            return redirect('/admin')  # Eller en anden beskyttet side
-        else:
             flash('Forkert brugernavn eller adgangskode.', 'error')
             return redirect('/login')
 
+    else: #Tilføjet debugging.
+        print("--- DEBUG: login() GET request ---")
     return render_template('login.html')
 
 @app.route('/logout')
