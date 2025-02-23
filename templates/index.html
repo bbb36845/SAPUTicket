@@ -82,9 +82,37 @@
             /* Sæt "labels" for hver celle */
             td:before { content: attr(data-label); }
         }
+  .flashes {
+      list-style: none;
+      padding: 0;
+  }
+
+  .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 10px;
+      margin-bottom: 10px;
+  }
+
+  .success {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 10px;
+      margin-bottom: 10px;
+  }
+</style>
     </style>
 </head>
 <body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
     <h2>Opret ny ticket</h2>
 <form action="/create" method="post">
     <label for="lejer">Lejer:</label><br>
