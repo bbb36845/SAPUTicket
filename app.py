@@ -49,7 +49,7 @@ def get_db_connection():
     return conn
 
 def init_db():
-    print("init_db(): START")  # Mere debugging
+    print("INIT_DB ER NU KØRT!!!!")  # Meget tydelig besked
     try:
         conn = get_db_connection()
         print(f"  Forbindelse til database oprettet: {conn}")  # Debugging
