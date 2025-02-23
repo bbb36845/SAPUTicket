@@ -55,43 +55,20 @@ def init_db():
             conn.executescript(f.read())
         conn.commit()
         conn.close()
-        print("init_db() afsluttet uden fejl.")
+        print("init_db() afsluttet uden fejl.")  # Behold denne!
     except Exception as e:
         print(f"Fejl i init_db(): {e}")
 
 def get_user(username):
     print(f"--- DEBUG: get_user({username}) ---")
     conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        print(f"  SQL: SELECT * FROM users WHERE username = '{username}'")  # Vis SQL'en (med brugernavn)
-        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-        user_data = cursor.fetchone()
-
-        print(f"  SQL-forespørgsel udført.")
-
-        if user_data:
-            print(f"  Bruger fundet i DB (rå data): {user_data}")
-            # --- DEBUG: Vis dataene som dictionary ---
-            print("  Brugerdata som dictionary:")
-            for key, value in user_data.items():
-                print(f"    {key}: {value!r}")  # Brug !r for at vise repræsentation
-            # --- SLUT på DEBUG ---
-
-            user = User(user_data['id'], user_data['username'], user_data['password_hash'], user_data['role'], user_data['invitation_token'], user_data['invited_by'], user_data['unit_id'])
-            print(f"  User objekt oprettet: {user.username}")
-            return user
-        else:
-            print("  Bruger ikke fundet i DB.")
-            return None
-    except Exception as e:
-        print(f"--- DEBUG: Fejl i get_user(): {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-    finally:
-        conn.close()
-        print("--- DEBUG: get_user() afsluttes ---")
+    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    conn.close()
+    if user:
+        print(f"  Bruger fundet i DB: {user['username']}, hash: {user['password_hash']}")
+        return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
+    print("  Bruger ikke fundet i DB.")
+    return None
 
 # Kør init_db() HVIS databasen ikke eksisterer.
 if not os.path.exists(DATABASE):
@@ -222,32 +199,37 @@ def ticket_detail(ticket_id):
 def login():
     print("--- DEBUG: login() START ---")
     if request.method == 'POST':
+        print("--- DEBUG: POST request ---")
         username = request.form['username']
         password = request.form['password']
         print(f"  Indtastet brugernavn: {username}")
         print(f"  Indtastet adgangskode: {password}")
 
-        # --- MIDLERTIDIG HARDCODED DEBUGGING ---
-        if username == 'admin' and password == 'hemmeligt':
-            print("  HARDCODED LOGIN SUCCESS!")
-            user = get_user('admin') #Hent bruger fra database
-            if user: # Check at bruger findes.
+        user = get_user(username)
+
+        if user:
+            print(f"  Bruger fundet: {user.username}")
+            print(f"  Hashed password fra DB: {user.password_hash}")  # Rå bytes
+            is_valid = check_password_hash(user.password_hash, password)
+            print(f"  Password check resultat: {is_valid}")
+
+            if is_valid:
+                print("  Logger ind...")
                 flask_login.login_user(user)
-                flash('Du er nu logget ind (HARDCODED)!', 'success')
-                return redirect('/admin')
+                flash('Du er nu logget ind!', 'success')
+                return redirect('/admin')  # Eller en anden beskyttet side
             else:
-                print ("  Fejl: Admin bruger findes ikke i databasen")
-                flash ("Admin bruger ikke fundet", 'error')
+                print("  Password forkert.")
+                flash('Forkert brugernavn eller adgangskode.', 'error')
                 return redirect('/login')
         else:
-            print("  HARDCODED LOGIN FAILED!")
-            flash('Forkert brugernavn eller adgangskode (HARDCODED).', 'error')
+            print("  Bruger IKKE fundet.")
+            flash('Forkert brugernavn eller adgangskode.', 'error')
             return redirect('/login')
-        # --- SLUT PÅ MIDLERTIDIG HARDCODED DEBUGGING ---
 
     else:
         print("--- DEBUG: login() GET request ---")
-    return render_template('login.html')
+        return render_template('login.html')
 
 @app.route('/logout')
 @flask_login.login_required
