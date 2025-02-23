@@ -12,22 +12,17 @@
             padding: 8px;
             text-align: left;
         }
-        /* Tilføjet styling for links */
-        a {
-            text-decoration: none; /* Fjern understregning */
-            color: blue;          /* Blå farve (eller vælg en anden) */
-        }
-        a:hover {
-            text-decoration: underline; /* Understreg ved hover */
-        }
         /* Styling af knapper i formularer */
-         input[type="submit"] {
+         input[type="submit"], button {
             background-color: #4CAF50; /* Grøn knap */
             color: white;
             padding: 10px 20px;
             border: none;
             cursor: pointer;
+            text-decoration: none; /*Fjern understregning*/
+            display: inline-block; /* Sørg for at bredde og højde respekteres */
         }
+
         .flashes {
             list-style: none;
             padding: 0;
@@ -70,7 +65,9 @@
                 <th>Status</th>
                 <th>Udlejer</th>
                 <th>Håndværker</th>
-                <th>Rediger</th>  <th>Slet</th>     </tr>
+                <th>Rediger</th>
+                <th>Slet</th>
+            </tr>
         </thead>
         <tbody>
             {% for ticket in tickets %}
@@ -81,8 +78,11 @@
                 <td data-label="Status">{{ ticket.status }}</td>
                 <td data-label="Udlejer">{{ ticket.udlejer }}</td>
                 <td data-label="Håndværker">{{ ticket.håndværker }}</td>
-                <td data-label="Rediger">  <a href="/edit/{{ ticket.id }}">Rediger</a>  </td>
-                <td data-label="Slet">  <form action="/delete/{{ ticket.id }}" method="post">
+                <td data-label="Rediger">
+                    <a href="/edit/{{ ticket.id }}" class="button-link">Rediger</a>
+                </td>
+                <td data-label="Slet">
+                    <form action="/delete/{{ ticket.id }}" method="post">
                         <input type="submit" value="Slet">
                     </form>
                 </td>
