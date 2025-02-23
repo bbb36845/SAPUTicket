@@ -4,6 +4,8 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, flash, url_for
 import flask_login
 from werkzeug.security import generate_password_hash, check_password_hash
+import binascii # Importer binascii
+
 
 app = Flask(__name__)
 app.secret_key = 'en_super_hemmelig_nøgle'  # Skift dette i produktion!
@@ -60,29 +62,19 @@ def init_db():
         print(f"Fejl i init_db(): {e}")
 
 def get_user(username):
+    print(f"--- DEBUG: get_user({username}) ---") #Tilføjet debugging.
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     conn.close()
     if user:
+        print(f"  Bruger fundet i DB: {user['username']}, hash: {user['password_hash']}") #Tilføjet debugging.
         return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
+    print("  Bruger ikke fundet i DB.") #Tilføjet debugging
     return None
 
 # Kør init_db() HVIS databasen ikke eksisterer.
 if not os.path.exists(DATABASE):
     init_db()
-
-# --- Midlertidig kode til at oprette en testbruger ---
-# conn = get_db_connection()
-# admin_exists = conn.execute('SELECT id FROM users WHERE username = ?', ('admin',)).fetchone()
-# if not admin_exists:
-#     hashed_password = generate_password_hash('hemmeligt', method='pbkdf2:sha256') #Tilføjet metode specificering.
-#     conn.execute(
-#         "INSERT INTO users (username, password_hash, role, unit_id) VALUES (?, ?, ?, ?)",
-#         ('admin', hashed_password, 'admin', 1) # Husk unit_id
-#     )
-#     conn.commit()
-# conn.close()
-# --- Slut på midlertidig kode ---
 
 @app.route("/")
 def index():
@@ -98,7 +90,7 @@ def index():
 
 
 @app.route("/create", methods=["POST"])
-@flask_login.login_required #Tilføjet login_required decorator.
+@flask_login.login_required
 def create_ticket():
     lejer = request.form["lejer"]
     beskrivelse = request.form["beskrivelse"]
@@ -138,7 +130,7 @@ def admin():
     return render_template("admin.html", tickets=tickets)
 
 @app.route("/delete/<int:ticket_id>", methods=["POST"])
-@flask_login.login_required #Tilføjet login_required decorator
+@flask_login.login_required
 def delete_ticket(ticket_id):
     conn = get_db_connection()
     try:
@@ -146,7 +138,7 @@ def delete_ticket(ticket_id):
         conn.commit()
         flash('Ticket slettet!', 'success')
     except Exception as e:
-        print(f"Fejl ved sletning af ticket: {e}")
+        print(f"Fejl ved sletning af ticket {e}")
         flash(f'Fejl ved sletning af ticket: {e}', 'error')
     finally:
         conn.close()
@@ -207,20 +199,45 @@ def ticket_detail(ticket_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    print("--- DEBUG: login() START ---")  # Helt i starten
     if request.method == 'POST':
+        print("--- DEBUG: POST request ---") #Tilføjet debugging.
         username = request.form['username']
         password = request.form['password']
+        print(f"  Indtastet brugernavn: {username}")
+        print(f"  Indtastet adgangskode: {password}")
+
         user = get_user(username)
 
-        if user and check_password_hash(user.password_hash, password):
-            flask_login.login_user(user)
-            flash('Du er nu logget ind!', 'success')
-            return redirect('/admin')  # Eller en anden beskyttet side
+        if user:
+            print(f"  Bruger fundet: {user.username}")
+            print(f"  Hashed password fra DB (rå): {user.password_hash}")
+
+            # Konverter til hex (ligesom i SQLite)
+            import binascii
+            hashed_password_hex = binascii.hexlify(user.password_hash).decode('ascii')
+            print(f"  Hashed password fra DB (hex): {hashed_password_hex}")
+
+            is_valid = check_password_hash(user.password_hash, password)
+            print(f"  Password check resultat: {is_valid}")
+
+            if is_valid:
+                print("  Logger ind...")
+                flask_login.login_user(user)
+                flash('Du er nu logget ind!', 'success')
+                return redirect('/admin')
+            else:
+                print("  Password forkert.")
+                flash('Forkert brugernavn eller adgangskode.', 'error')
+                return redirect('/login')
         else:
+            print("  Bruger IKKE fundet.")
             flash('Forkert brugernavn eller adgangskode.', 'error')
             return redirect('/login')
 
-    return render_template('login.html')
+    else:
+        print("--- DEBUG: login() GET request ---") #Tilføjet debugging.
+        return render_template('login.html')
 
 @app.route('/logout')
 @flask_login.login_required
