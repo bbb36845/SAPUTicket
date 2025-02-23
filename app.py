@@ -44,35 +44,81 @@ class User(flask_login.UserMixin):
         self.unit_id = unit_id
 
 def get_db_connection():
+    print(f"--- DEBUG: get_db_connection() ---")  # Tilføjet debugging
+    print(f"  DATABASE: {DATABASE}")  # Tilføjet debugging
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
+    print(f"  Forbindelse oprettet: {conn}")  # Tilføj debugging
     return conn
 
 def init_db():
+    print("INIT_DB: START")  # Ekstra debugging
     try:
         conn = get_db_connection()
+        print(f"INIT_DB: Forbindelse oprettet: {conn}")
         with open(SCHEMA, 'r') as f:
-            conn.executescript(f.read())
+            print(f"INIT_DB: Åbner schemafil: {SCHEMA}")
+            sql_script = f.read()
+            print(f"INIT_DB: SQL script læst. Længde: {len(sql_script)}")
+            # print(f"INIT_DB: SQL script:\n{sql_script}") # Fjern denne, hvis schema.sql er ok
+            conn.executescript(sql_script)
         conn.commit()
         conn.close()
-        print("init_db() afsluttet uden fejl.")  # Behold denne!
+        print("INIT_DB: Afsluttet uden fejl (forhåbentlig).")
+
+        # --- EKSTRA DEBUGGING: List tabeller EFTER init_db() ---
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        conn.close()
+        print(f"INIT_DB: Tabeller efter initialisering: {tables}")
+        # --- SLUT på ekstra debugging ---
+
     except Exception as e:
         print(f"Fejl i init_db(): {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+            print("INIT_DB: Forbindelse lukket (finally).")
+
+# TVING init_db() til at køre - fjern betingelsen.
+init_db()
 
 def get_user(username):
     print(f"--- DEBUG: get_user({username}) ---")
     conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-    conn.close()
-    if user:
-        print(f"  Bruger fundet i DB: {user['username']}, hash: {user['password_hash']}")
-        return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
-    print("  Bruger ikke fundet i DB.")
-    return None
+    try:
+        cursor = conn.cursor()
+        print(f"  SQL: SELECT * FROM users WHERE username = '{username}'")
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user_data = cursor.fetchone()
 
-# Kør init_db() HVIS databasen ikke eksisterer.
-if not os.path.exists(DATABASE):
-    init_db()
+        print(f"  SQL-forespørgsel udført.")
+
+        if user_data:
+            print(f"  Bruger fundet i DB (rå data): {user_data}")
+            # --- DEBUG: Vis dataene som dictionary ---
+            print("  Brugerdata som dictionary:")
+            for key, value in user_data.items():
+                print(f"    {key}: {value!r}")
+            # --- SLUT på DEBUG ---
+            user = User(user_data['id'], user_data['username'], user_data['password_hash'], user_data['role'], user_data['invitation_token'], user_data['invited_by'], user_data['unit_id'])
+            print(f"  User objekt oprettet: {user.username}")
+            return user
+        else:
+            print("  Bruger ikke fundet i DB.")
+            return None
+    except Exception as e:
+        print(f"--- DEBUG: Fejl i get_user(): {e}")
+        import traceback
+        traceback.print_exc()
+        return None  # Vigtigt: Returner None ved fejl
+    finally:
+        conn.close()
+        print("--- DEBUG: get_user() afsluttes ---")
 
 @app.route("/")
 def index():
