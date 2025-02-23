@@ -83,7 +83,7 @@
         <tbody>
             {% for ticket in tickets %}
             <tr>
-                <td data-label="ID">{{ ticket.id }}</td>
+                <td data-label="ID"><a href="/ticket/{{ ticket.id }}">{{ ticket.id }}</a></td>
                 <td data-label="Lejer">{{ ticket.lejer }}</td>
                 <td data-label="Beskrivelse">{{ ticket.beskrivelse }}</td>
                 <td data-label="Status">{{ ticket.status }}</td>
