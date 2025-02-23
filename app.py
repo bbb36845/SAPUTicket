@@ -1,7 +1,7 @@
 import sqlite3
 import os
 from functools import wraps
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, url_for
 import flask_login
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -51,11 +51,6 @@ def init_db():
     except Exception as e:
         print(f"Fejl i init_db(): {e}")  # VIGTIGT: Fang og print evt. fejl
 
-
-# TVING init_db() til at køre - fjern betingelsen.
-init_db()
-
-
 def get_user(username):
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
@@ -64,6 +59,9 @@ def get_user(username):
         return User(user['id'], user['username'], user['password_hash'], user['role'])
     return None
 
+# Kør init_db() HVIS databasen ikke eksisterer.
+if not os.path.exists(DATABASE):
+    init_db()
 
 # --- Midlertidig kode til at oprette en testbruger ---
 conn = get_db_connection()
@@ -76,22 +74,6 @@ if conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0:
     conn.commit()
 conn.close()
 # --- Slut på midlertidig kode ---
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = get_user(username)
-
-        if user and check_password_hash(user.password_hash, password):
-            flask_login.login_user(user)
-            flash('Du er nu logget ind!', 'success')
-            return redirect('/admin')  # Eller en anden beskyttet side
-        else:
-            flash('Forkert brugernavn eller adgangskode.', 'error')
-            return redirect('/login')
-
-    return render_template('login.html')
 
 @app.route("/")
 def index():
@@ -107,6 +89,7 @@ def index():
 
 
 @app.route("/create", methods=["POST"])
+@flask_login.login_required #Tilføjet login_required decorator.
 def create_ticket():
     lejer = request.form["lejer"]
     beskrivelse = request.form["beskrivelse"]
@@ -146,6 +129,7 @@ def admin():
     return render_template("admin.html", tickets=tickets)
 
 @app.route("/delete/<int:ticket_id>", methods=["POST"])
+@flask_login.login_required #Tilføjet login_required decorator
 def delete_ticket(ticket_id):
     conn = get_db_connection()
     try:
@@ -211,3 +195,27 @@ def ticket_detail(ticket_id):
         return redirect('/admin')  # Eller vis en 404-side
 
     return render_template("ticket.html", ticket=ticket)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = get_user(username)
+
+        if user and check_password_hash(user.password_hash, password):
+            flask_login.login_user(user)
+            flash('Du er nu logget ind!', 'success')
+            return redirect('/admin')  # Eller en anden beskyttet side
+        else:
+            flash('Forkert brugernavn eller adgangskode.', 'error')
+            return redirect('/login')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@flask_login.login_required #Tilføjet login_required decorator
+def logout():
+    flask_login.logout_user()
+    flash('Du er nu logget ud!', 'success')
+    return redirect(url_for('index')) # omdiriger til index
