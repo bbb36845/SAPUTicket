@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ticket Detaljer</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .ticket-detail { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Ticket Detaljer (ID: {{ ticket.id }})</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <div class="ticket-detail">
+        <label>Lejer:</label>
+        <p>{{ ticket.lejer }}</p>
+    </div>
+
+    <div class="ticket-detail">
+        <label>Beskrivelse:</label>
+        <p>{{ ticket.beskrivelse }}</p>
+    </div>
+
+    <div class="ticket-detail">
+        <label>Status:</label>
+        <p>{{ ticket.status }}</p>
+    </div>
+
+    <div class="ticket-detail">
+        <label>Udlejer:</label>
+        <p>{{ ticket.udlejer }}</p>
+    </div>
+
+     <div class="ticket-detail">
+        <label>Håndværker:</label>
+        <p>{{ ticket.håndværker }}</p>
+    </div>
+    <a href="/admin">Tilbage til Admin Panel</a>
+</body>
+</html>
