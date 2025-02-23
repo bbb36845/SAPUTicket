@@ -73,3 +73,20 @@ def create_ticket():
     finally:
         conn.close()
     return redirect("/")
+@app.route("/admin")
+def admin():
+    # MEGET SIMPEL adgangskontrol (IKKE til produktion!)
+    if request.authorization and request.authorization.username == 'admin' and request.authorization.password == 'hemmeligt':
+        conn = get_db_connection()
+        tickets = conn.execute('SELECT * FROM tickets').fetchall()
+        conn.close()
+        return render_template("admin.html", tickets=tickets)
+    else:
+        return "Adgang nægtet", 401  # 401 Unauthorized
+@app.route("/delete/<int:ticket_id>", methods=["POST"])
+def delete_ticket(ticket_id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM tickets WHERE id = ?", (ticket_id,))
+    conn.commit()
+    conn.close()
+    return redirect("/admin")
