@@ -49,30 +49,15 @@ def get_db_connection():
     return conn
 
 def init_db():
-    print("INIT_DB ER NU KØRT!!!!")  # Meget tydelig besked
     try:
         conn = get_db_connection()
-        print(f"  Forbindelse til database oprettet: {conn}")  # Debugging
         with open(SCHEMA, 'r') as f:
-            print(f"  Åbner schemafil: {SCHEMA}") # Debugging
-            sql_script = f.read()
-            print(f"  SQL script læst:\n{sql_script}")  # Debugging - VIS HELE SCRIPTET
-            conn.executescript(sql_script)
+            conn.executescript(f.read())
         conn.commit()
         conn.close()
-        print("init_db(): Afsluttet UDEN fejl (forhåbentlig)")
+        print("init_db() afsluttet uden fejl.") #Behold denne.
     except Exception as e:
         print(f"Fejl i init_db(): {e}")
-        import traceback
-        traceback.print_exc()  # Print hele traceback'en
-    finally:  # Vigtigt: Sørg for, at forbindelsen ALTID lukkes
-        if 'conn' in locals() and conn:
-            conn.close()
-            print("Databaseforbindelse lukket (finally).")
-
-# Kør init_db() HVIS databasen ikke eksisterer.
-if not os.path.exists(DATABASE):
-    init_db()
 
 def get_user(username):
     conn = get_db_connection()
@@ -82,20 +67,21 @@ def get_user(username):
         return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
     return None
 
+# Kør init_db() HVIS databasen ikke eksisterer.
+if not os.path.exists(DATABASE):
+    init_db()
+
 @app.route("/")
 def index():
     conn = get_db_connection()
     try:
-        # FORSØG at hente brugere (ikke tickets)
-        users = conn.execute('SELECT * FROM users').fetchall()
-        print(f"Hentede users: {users}")  # Debugging
-        return f"Antal brugere: {len(users)}" # Simpelt output
-
+        tickets = conn.execute('SELECT * FROM tickets').fetchall()
     except sqlite3.OperationalError as e:
-        print(f"Fejl: {e}")
-        return f"Fejl: {e}"  # Vis fejlen direkte
+        print(f"Fejl ved hentning af tickets: {e}")
+        tickets = []
     finally:
         conn.close()
+    return render_template("index.html", tickets=tickets)
 
 
 @app.route("/create", methods=["POST"])
@@ -147,7 +133,7 @@ def delete_ticket(ticket_id):
         conn.commit()
         flash('Ticket slettet!', 'success')
     except Exception as e:
-        print(f"Fejl ved sletning af ticket {e}")
+        print(f"Fejl ved sletning af ticket: {e}")
         flash(f'Fejl ved sletning af ticket: {e}', 'error')
     finally:
         conn.close()
