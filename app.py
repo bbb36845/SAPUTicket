@@ -199,37 +199,32 @@ def ticket_detail(ticket_id):
 def login():
     print("--- DEBUG: login() START ---")
     if request.method == 'POST':
-        print("--- DEBUG: POST request ---")
         username = request.form['username']
         password = request.form['password']
         print(f"  Indtastet brugernavn: {username}")
         print(f"  Indtastet adgangskode: {password}")
 
-        user = get_user(username)
-
-        if user:
-            print(f"  Bruger fundet: {user.username}")
-            print(f"  Hashed password fra DB: {user.password_hash}")  # Rå bytes
-            is_valid = check_password_hash(user.password_hash, password)
-            print(f"  Password check resultat: {is_valid}")
-
-            if is_valid:
-                print("  Logger ind...")
+        # --- MIDLERTIDIG HARDCODED DEBUGGING ---
+        if username == 'admin' and password == 'hemmeligt':
+            print("  HARDCODED LOGIN SUCCESS!")
+            user = get_user('admin') #Hent bruger fra database
+            if user: # Check at bruger findes.
                 flask_login.login_user(user)
-                flash('Du er nu logget ind!', 'success')
-                return redirect('/admin')  # Eller en anden beskyttet side
+                flash('Du er nu logget ind (HARDCODED)!', 'success')
+                return redirect('/admin')
             else:
-                print("  Password forkert.")
-                flash('Forkert brugernavn eller adgangskode.', 'error')
+                print ("  Fejl: Admin bruger findes ikke i databasen")
+                flash ("Admin bruger ikke fundet", 'error')
                 return redirect('/login')
         else:
-            print("  Bruger IKKE fundet.")
-            flash('Forkert brugernavn eller adgangskode.', 'error')
+            print("  HARDCODED LOGIN FAILED!")
+            flash('Forkert brugernavn eller adgangskode (HARDCODED).', 'error')
             return redirect('/login')
+        # --- SLUT PÅ MIDLERTIDIG HARDCODED DEBUGGING ---
 
     else:
         print("--- DEBUG: login() GET request ---")
-        return render_template('login.html')
+    return render_template('login.html')
 
 @app.route('/logout')
 @flask_login.login_required
