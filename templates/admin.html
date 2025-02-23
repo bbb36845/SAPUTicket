@@ -2,6 +2,15 @@
 <html>
 <head>
     <title>Admin Panel</title>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
     <style>
         table {
             border-collapse: collapse;
@@ -12,6 +21,25 @@
             padding: 8px;
             text-align: left;
         }
+  .flashes {
+      list-style: none;
+      padding: 0;
+  }
+
+  .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 10px;
+      margin-bottom: 10px;
+  }
+
+  .success {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 10px;
+      margin-bottom: 10px;
+  }
+</style>
     </style>
 </head>
 <body>
@@ -38,6 +66,14 @@
                 <td>{{ ticket.status }}</td>
                 <td>{{ ticket.udlejer }}</td>
                 <td>{{ ticket.håndværker }}</td>
+                <td>
+                    <a href="/edit/{{ ticket.id }}">Rediger</a>
+                </td>
+                <td>
+                    <form action="/delete/{{ ticket.id }}" method="post">
+                        <input type="submit" value="Slet">
+                    </form>
+                </td>
                 <td>
                     <form action="/delete/{{ ticket.id }}" method="post">
                         <input type="submit" value="Slet">

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rediger Ticket</title>
+    <style>
+        /* Grundlæggende styling - samme som index.html */
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rediger Ticket</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form action="/edit/{{ ticket.id }}" method="post">
+        <label for="lejer">Lejer:</label><br>
+        <input type="text" id="lejer" name="lejer" value="{{ ticket.lejer }}" required><br><br>
+
+        <label for="beskrivelse">Beskrivelse:</label><br>
+        <textarea id="beskrivelse" name="beskrivelse" rows="4" cols="50" required>{{ ticket.beskrivelse }}</textarea><br><br>
+
+        <label for="status">Status:</label><br>
+        <select id="status" name="status" required>
+            <option value="Oprettet" {% if ticket.status == 'Oprettet' %}selected{% endif %}>Oprettet</option>
+            <option value="Igangsat" {% if ticket.status == 'Igangsat' %}selected{% endif %}>Igangsat</option>
+            <option value="Afventer" {% if ticket.status == 'Afventer' %}selected{% endif %}>Afventer</option>
+            <option value="Afsluttet" {% if ticket.status == 'Afsluttet' %}selected{% endif %}>Afsluttet</option>
+        </select><br><br>
+
+        <label for="udlejer">Udlejer:</label><br>
+        <select id="udlejer" name="udlejer" required>
+            <option value="Poseidon Ejendomme" {% if ticket.udlejer == 'Poseidon Ejendomme' %}selected{% endif %}>Poseidon Ejendomme</option>
+            <option value="Andreasen Ejendomme" {% if ticket.udlejer == 'Andreasen Ejendomme' %}selected{% endif %}>Andreasen Ejendomme</option>
+            <option value="Vedbækhus" {% if ticket.udlejer == 'Vedbækhus' %}selected{% endif %}>Vedbækhus</option>
+            <option value="Ishockey ApS" {% if ticket.udlejer == 'Ishockey ApS' %}selected{% endif %}>Ishockey ApS</option>
+        </select><br><br>
+
+        <label for="håndværker">Håndværker:</label><br>
+        <input type="text" id="håndværker" name="håndværker" value="{{ ticket.håndværker }}"><br><br>
+
+        <input type="submit" value="Gem">
+    </form>
+</body>
+</html>

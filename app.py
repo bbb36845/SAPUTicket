@@ -1,10 +1,11 @@
 import sqlite3
 import os  # Importer os modulet
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash
 from functools import wraps
 
 
 app = Flask(__name__)
+app.secret_key = 'en_super_hemmelig_nøgle'  # VIGTIGT: Skift dette i produktion!
 
 # Brug absolut sti til databasen OG schema.sql
 DATABASE = os.path.join(app.root_path, 'tickets.db')
@@ -76,9 +77,11 @@ def create_ticket():
             (lejer, beskrivelse, "Oprettet", udlejer),
         )
         conn.commit()
-        print("Ticket oprettet (forhåbentlig!)")  # Debugging
+        flash('Ticket oprettet!', 'success')  # Tilføjet flash-besked
     except Exception as e:
-        print(f"Fejl ved oprettelse af ticket: {e}") #Mere debugging.
+        print(f"Fejl ved oprettelse af ticket: {e}")  # Behold denne
+        flash(f'Fejl ved oprettelse af ticket: {e}', 'error')  # Tilføjet flash-besked
+        # Overvej at rulle transaktionen tilbage: conn.rollback()
     finally:
         conn.close()
     return redirect("/")
@@ -92,7 +95,50 @@ def admin():
 @app.route("/delete/<int:ticket_id>", methods=["POST"])
 def delete_ticket(ticket_id):
     conn = get_db_connection()
-    conn.execute("DELETE FROM tickets WHERE id = ?", (ticket_id,))
-    conn.commit()
+    try:
+        conn.execute("DELETE FROM tickets WHERE id = ?", (ticket_id,))
+        conn.commit()
+        flash('Ticket slettet!', 'success') #Tilføjet flash besked.
+    except Exception as e:
+        print(f"Fejl ved sletning af ticket {e}") #Behold denne.
+        flash(f'Fejl ved sletning af ticket {e}', 'error') #Tilføjet flash besked.
+    finally:
+        conn.close()
+    return redirect("/admin")
+@app.route("/edit/<int:ticket_id>", methods=["GET"])
+def edit_ticket(ticket_id):
+    conn = get_db_connection()
+    ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
     conn.close()
+
+    if ticket is None:
+        flash('Ticket findes ikke!', 'error')
+        return redirect('/admin')
+
+    return render_template("edit.html", ticket=ticket)
+
+
+@app.route("/edit/<int:ticket_id>", methods=["POST"])
+def update_ticket(ticket_id):
+    lejer = request.form["lejer"]
+    beskrivelse = request.form["beskrivelse"]
+    status = request.form["status"]  # Hentet fra formularen
+    udlejer = request.form["udlejer"]
+    håndværker = request.form["håndværker"]
+
+
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            "UPDATE tickets SET lejer = ?, beskrivelse = ?, status = ?, udlejer = ?, håndværker = ? WHERE id = ?",
+            (lejer, beskrivelse, status, udlejer, håndværker, ticket_id),
+        )
+        conn.commit()
+        flash('Ticket opdateret!', 'success')
+    except Exception as e:
+        print(f"Fejl ved opdatering af ticket: {e}")
+        flash(f'Fejl ved opdatering af ticket: {e}', 'error')
+        # Evt. conn.rollback()
+    finally:
+        conn.close()
     return redirect("/admin")
