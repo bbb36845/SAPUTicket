@@ -60,15 +60,31 @@ def init_db():
         print(f"Fejl i init_db(): {e}")
 
 def get_user(username):
-    print(f"--- DEBUG: get_user({username}) ---") #Tilføjet debugging.
+    print(f"--- DEBUG: get_user({username}) ---")
     conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-    conn.close()
-    if user:
-        print(f"  Bruger fundet i DB: {user['username']}, hash: {user['password_hash']}") #Tilføjet debugging.
-        return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
-    print("  Bruger ikke fundet i DB.") #Tilføjet debugging
-    return None
+    try:  # Tilføj try/except/finally
+        cursor = conn.cursor()  # Brug en cursor
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user_data = cursor.fetchone()
+
+        print(f"  SQL-forespørgsel udført.")  # Debugging
+
+        if user_data:
+            print(f"  Bruger fundet i DB (rå data): {user_data}")
+            user = User(user_data['id'], user_data['username'], user_data['password_hash'], user_data['role'], user_data['invitation_token'], user_data['invited_by'], user_data['unit_id'])
+            print(f"  User objekt oprettet: {user.username}")
+            return user
+        else:
+            print("  Bruger ikke fundet i DB.")
+            return None
+    except Exception as e:
+        print(f"--- DEBUG: Fejl i get_user(): {e}")  # Vigtigt: Fang og print evt. fejl
+        import traceback
+        traceback.print_exc()
+        return None  # Vigtigt: Returner None ved fejl
+    finally:
+        conn.close()
+        print("--- DEBUG: get_user() afsluttes ---")
 
 # Kør init_db() HVIS databasen ikke eksisterer.
 if not os.path.exists(DATABASE):
