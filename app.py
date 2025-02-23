@@ -24,21 +24,19 @@ def load_user(user_id):
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     conn.close()
     if user:
-        return User(user['id'], user['username'], user['password_hash'], user['role'])
+        return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
     return None
-
-# --- Context Processor ---
-@app.context_processor
-def inject_login():
-    return dict(flask_login=flask_login)
 
 # --- User model (til Flask-Login) ---
 class User(flask_login.UserMixin):
-    def __init__(self, id, username, password_hash, role=None):
+     def __init__(self, id, username, password_hash, role=None, invitation_token=None, invited_by=None, unit_id=None):
         self.id = id
         self.username = username
         self.password_hash = password_hash
         self.role = role
+        self.invitation_token = invitation_token  # Tilføjet
+        self.invited_by = invited_by  # Tilføjet
+        self.unit_id = unit_id
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
@@ -61,24 +59,12 @@ def get_user(username):
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     conn.close()
     if user:
-        return User(user['id'], user['username'], user['password_hash'], user['role'])
+        return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
     return None
 
 # Kør init_db() HVIS databasen ikke eksisterer.
 if not os.path.exists(DATABASE):
     init_db()
-
-# --- Midlertidig kode til at oprette en testbruger ---
-conn = get_db_connection()
-if conn.execute('SELECT COUNT(*) FROM users').fetchone()[0] == 0:
-    hashed_password = generate_password_hash('hemmeligt')
-    conn.execute(
-        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-        ('admin', hashed_password, 'admin')
-    )
-    conn.commit()
-conn.close()
-# --- Slut på midlertidig kode ---
 
 @app.route("/")
 def index():
@@ -100,20 +86,20 @@ def create_ticket():
     beskrivelse = request.form["beskrivelse"]
     udlejer = request.form["udlejer"]
 
-    #Hent user_id fra den bruger der er logget ind:
+    #Hent unit_id fra den bruger der er logget ind:
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT id FROM users WHERE username = ?", (flask_login.current_user.username,)
+        "SELECT unit_id FROM users WHERE id = ?", (flask_login.current_user.id,)
     )
-    user_id = cur.fetchone()[0]
+    unit_id = cur.fetchone()[0]
     conn.close()
 
     conn = get_db_connection()
     try:
         conn.execute(
-            "INSERT INTO tickets (lejer, beskrivelse, status, udlejer, user_id) VALUES (?, ?, ?, ?, ?)",
-            (lejer, beskrivelse, "Oprettet", udlejer, user_id),
+            "INSERT INTO tickets (lejer, beskrivelse, status, udlejer, user_id, unit_id) VALUES (?, ?, ?, ?, ?, ?)",
+            (lejer, beskrivelse, "Oprettet", udlejer, flask_login.current_user.id, unit_id),
         )
         conn.commit()
         flash('Ticket oprettet!', 'success')
@@ -143,7 +129,7 @@ def delete_ticket(ticket_id):
         flash('Ticket slettet!', 'success')
     except Exception as e:
         print(f"Fejl ved sletning af ticket {e}")
-        flash(f'Fejl ved sletning af ticket {e}', 'error')
+        flash(f'Fejl ved sletning af ticket: {e}', 'error')
     finally:
         conn.close()
     return redirect("/admin")
@@ -224,3 +210,67 @@ def logout():
     flask_login.logout_user()
     flash('Du er nu logget ud!', 'success')
     return redirect(url_for('index')) # omdiriger til index
+
+@app.route('/register', methods=['GET', 'POST'])
+#@flask_login.login_required # Fjern midlertidigt, for test.
+def register():
+    # Tjek om brugeren er admin
+    #if flask_login.current_user.role != 'admin':
+    #    flash('Du har ikke tilladelse til at oprette brugere.', 'error')
+    #    return redirect(url_for('index'))  # Eller en anden passende side
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        #role = request.form['role'] #Ikke længere del af formular.
+        role = "lejer"  # Sæt rollen automatisk til "lejer" - vi ændrer dette senere!
+        unit_id = 1 #Hardcoded, skal ændres.
+
+        # --- Validering (start) ---
+        errors = []  # Opret en liste til at holde styr på fejl
+
+        if not username:
+            errors.append('Brugernavn er påkrævet.')
+        if not password:
+            errors.append('Adgangskode er påkrævet.')
+        if not confirm_password:
+            errors.append('Bekræft adgangskode er påkrævet.')  # Lidt overflødig, da HTML har 'required', men god praksis
+        if password != confirm_password:
+            errors.append('Adgangskoderne stemmer ikke overens.')
+
+        # Tjek om brugernavn eksisterer (mere effektiv forespørgsel)
+        conn = get_db_connection()
+        existing_user = conn.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone()
+        conn.close()
+        if existing_user:
+            errors.append('Brugernavnet er allerede i brug.')
+
+        # Hvis der er fejl, vis formularen igen med fejlbeskeder
+        if errors:
+            for error in errors:
+                flash(error, 'error')
+            return render_template('register.html', username=username, role=role)  # Send evt. eksisterende input tilbage
+        # --- Validering (slut) ---
+
+        # Hash adgangskoden
+        hashed_password = generate_password_hash(password)
+
+        # Opret bruger i databasen
+        conn = get_db_connection()
+        try:
+            conn.execute(
+                "INSERT INTO users (username, password_hash, role, unit_id) VALUES (?, ?, ?, ?)",
+                (username, hashed_password, role, unit_id)
+            )
+            conn.commit()
+            flash('Bruger oprettet!', 'success')
+            return redirect(url_for('login'))  # Eller en anden passende side (f.eks. en liste over brugere)
+        except Exception as e:
+            print(f"Fejl ved oprettelse af bruger: {e}")
+            flash(f'Fejl ved oprettelse af bruger. Se server log for detaljer.', 'error')  # Mere generel fejlbesked til brugeren
+            conn.rollback()  # Rul tilbage, hvis der sker en fejl
+        finally:
+            conn.close()
+
+    return render_template('register.html')  # Vis formularen (GET request)
