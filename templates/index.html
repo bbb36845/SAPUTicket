@@ -8,12 +8,12 @@
             font-family: sans-serif;
             margin: 20px;
         }
-    
+
         label {
             display: block; /* Labels på egne linjer */
             margin-bottom: 5px;
         }
-    
+
         input[type="text"],
         textarea,
         select {
@@ -23,7 +23,7 @@
             border: 1px solid #ccc;
             box-sizing: border-box; /* Inkluder padding og border i bredden */
         }
-    
+
         input[type="submit"] {
             background-color: #4CAF50; /* Grøn knap */
             color: white;
@@ -31,32 +31,32 @@
             border: none;
             cursor: pointer;
         }
-    
+
         table {
             border-collapse: collapse;
             width: 100%;
         }
-    
+
         th, td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
-    
+
         /* Responsivt design (simpel) */
         @media (max-width: 600px) {
             /* Skift til en-søjle layout på små skærme */
             table, thead, tbody, th, td, tr {
                 display: block;
             }
-    
+
             /* Skjul tabeloverskrifter på små skærme */
             thead tr {
                 position: absolute;
                 top: -9999px;
                 left: -9999px;
             }
-    
+
             td {
                 /* Vær som en række */
                 border: none;
@@ -66,7 +66,7 @@
                 white-space: normal;
                 text-align:left;
             }
-    
+
             td:before {
                 /* Vis "label" til venstre for data */
                 position: absolute;
@@ -78,60 +78,99 @@
                 text-align:left;
                 font-weight: bold;
             }
-    
+
             /* Sæt "labels" for hver celle */
             td:before { content: attr(data-label); }
         }
-  .flashes {
-      list-style: none;
-      padding: 0;
-  }
+        /* Styling af submit-knapper OG links, der skal ligne knapper */
+        input[type="submit"],
+        a.button-lookalike {
+            background-color: #4CAF50; /* Grøn baggrund */
+            color: white;          /* Hvid tekst */
+            padding: 10px 20px;    /* Indvendig plads */
+            border: none;         /* Ingen kant */
+            cursor: pointer;       /* Musemarkør som en hånd */
+            text-decoration: none; /* Ingen understregning (vigtigt for links) */
+            display: inline-block; /* Tillad bredde/højde/padding */
+            border-radius: 4px;   /* Afrundede hjørner (valgfrit) */
+            font-size: 16px;      /* Samme skriftstørrelse */
+            font-family: inherit;  /* Arv font fra parent (body) */
+        }
 
-  .error {
-      background-color: #f8d7da;
-      color: #721c24;
-      padding: 10px;
-      margin-bottom: 10px;
-  }
+        /* Styling ved hover (valgfrit) */
+        input[type="submit"]:hover,
+        a.button-lookalike:hover {
+            background-color: #3e8e41; /* Mørkere grøn ved hover */
+        }
+        a {
+            color: blue; /* Link farve */
+            text-decoration: none; /*Fjern understregning*/
+        }
+        .flashes {
+            list-style: none;
+            padding: 0;
+        }
 
-  .success {
-      background-color: #d4edda;
-      color: #155724;
-      padding: 10px;
-      margin-bottom: 10px;
-  }
-</style>
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <ul class="flashes">
-        {% for category, message in messages %}
-          <li class="{{ category }}">{{ message }}</li>
-        {% endfor %}
-      </ul>
+    {% if flask_login.current_user.is_authenticated %}
+    <p>Logget ind som: {{ flask_login.current_user.username }} <a class="button-lookalike" href="{{ url_for('logout') }}">Log ud</a></p>
+    {% else %}
+        <p><a class="button-lookalike" href="{{ url_for('login') }}">Log ind</a></p>
     {% endif %}
-  {% endwith %}
+
+    {% if flask_login.current_user.is_authenticated %}
+        {% if flask_login.current_user.role == 'admin' %}
+            <p><a class="button-lookalike" href="{{ url_for('admin') }}">Admin Panel</a></p>
+        {% endif %}
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
     <h2>Opret ny ticket</h2>
-<form action="/create" method="post">
-    <label for="lejer">Lejer:</label><br>
-    <input type="text" id="lejer" name="lejer" required><br><br>
+    <form action="/create" method="post">
+        <label for="lejer">Lejer:</label><br>
+        <input type="text" id="lejer" name="lejer" required><br><br>
 
-    <label for="beskrivelse">Beskrivelse:</label><br>
-    <textarea id="beskrivelse" name="beskrivelse" rows="4" cols="50" required></textarea><br><br>
+        <label for="beskrivelse">Beskrivelse:</label><br>
+        <textarea id="beskrivelse" name="beskrivelse" rows="4" cols="50" required></textarea><br><br>
 
-    <label for="udlejer">Udlejer:</label><br>
-     <select id="udlejer" name="udlejer" required>
-        <option value="Poseidon Ejendomme">Poseidon Ejendomme</option>
-        <option value="Andreasen Ejendomme">Andreasen Ejendomme</option>
-        <option value="Vedbækhus">Vedbækhus</option>
-        <option value="Ishockey ApS">Ishockey ApS</option>
-     </select><br><br>
+        <label for="udlejer">Udlejer:</label><br>
+         <select id="udlejer" name="udlejer" required>
+            <option value="Poseidon Ejendomme">Poseidon Ejendomme</option>
+            <option value="Andreasen Ejendomme">Andreasen Ejendomme</option>
+            <option value="Vedbækhus">Vedbækhus</option>
+            <option value="Ishockey ApS">Ishockey ApS</option>
+         </select><br><br>
 
-    <input type="submit" value="Opret">
-</form>
+        <input type="submit" value="Opret">
+    </form>
+
+
     <h1>Tickets</h1>
+    
     <table>
         <thead>
             <tr>
