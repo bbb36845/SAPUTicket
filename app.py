@@ -4,8 +4,6 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, flash, url_for
 import flask_login
 from werkzeug.security import generate_password_hash, check_password_hash
-import binascii # Importer binascii
-
 
 app = Flask(__name__)
 app.secret_key = 'en_super_hemmelig_nøgle'  # Skift dette i produktion!
@@ -138,7 +136,7 @@ def delete_ticket(ticket_id):
         conn.commit()
         flash('Ticket slettet!', 'success')
     except Exception as e:
-        print(f"Fejl ved sletning af ticket {e}")
+        print(f"Fejl ved sletning af ticket: {e}")
         flash(f'Fejl ved sletning af ticket: {e}', 'error')
     finally:
         conn.close()
@@ -199,9 +197,9 @@ def ticket_detail(ticket_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    print("--- DEBUG: login() START ---")  # Helt i starten
+    print("--- DEBUG: login() START ---")
     if request.method == 'POST':
-        print("--- DEBUG: POST request ---") #Tilføjet debugging.
+        print("--- DEBUG: POST request ---")
         username = request.form['username']
         password = request.form['password']
         print(f"  Indtastet brugernavn: {username}")
@@ -211,13 +209,7 @@ def login():
 
         if user:
             print(f"  Bruger fundet: {user.username}")
-            print(f"  Hashed password fra DB (rå): {user.password_hash}")
-
-            # Konverter til hex (ligesom i SQLite)
-            import binascii
-            hashed_password_hex = binascii.hexlify(user.password_hash).decode('ascii')
-            print(f"  Hashed password fra DB (hex): {hashed_password_hex}")
-
+            print(f"  Hashed password fra DB: {user.password_hash}")  # Rå bytes
             is_valid = check_password_hash(user.password_hash, password)
             print(f"  Password check resultat: {is_valid}")
 
@@ -225,7 +217,7 @@ def login():
                 print("  Logger ind...")
                 flask_login.login_user(user)
                 flash('Du er nu logget ind!', 'success')
-                return redirect('/admin')
+                return redirect('/admin')  # Eller en anden beskyttet side
             else:
                 print("  Password forkert.")
                 flash('Forkert brugernavn eller adgangskode.', 'error')
@@ -236,7 +228,7 @@ def login():
             return redirect('/login')
 
     else:
-        print("--- DEBUG: login() GET request ---") #Tilføjet debugging.
+        print("--- DEBUG: login() GET request ---")
         return render_template('login.html')
 
 @app.route('/logout')
