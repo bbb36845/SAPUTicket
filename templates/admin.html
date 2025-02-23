@@ -2,15 +2,6 @@
 <html>
 <head>
     <title>Admin Panel</title>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <ul class="flashes">
-      {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
     <style>
         table {
             border-collapse: collapse;
@@ -21,29 +12,54 @@
             padding: 8px;
             text-align: left;
         }
-  .flashes {
-      list-style: none;
-      padding: 0;
-  }
+        /* Tilføjet styling for links */
+        a {
+            text-decoration: none; /* Fjern understregning */
+            color: blue;          /* Blå farve (eller vælg en anden) */
+        }
+        a:hover {
+            text-decoration: underline; /* Understreg ved hover */
+        }
+        /* Styling af knapper i formularer */
+         input[type="submit"] {
+            background-color: #4CAF50; /* Grøn knap */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+        .flashes {
+            list-style: none;
+            padding: 0;
+        }
 
-  .error {
-      background-color: #f8d7da;
-      color: #721c24;
-      padding: 10px;
-      margin-bottom: 10px;
-  }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
 
-  .success {
-      background-color: #d4edda;
-      color: #155724;
-      padding: 10px;
-      margin-bottom: 10px;
-  }
-</style>
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Admin Panel</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
 
     <table>
         <thead>
@@ -54,23 +70,19 @@
                 <th>Status</th>
                 <th>Udlejer</th>
                 <th>Håndværker</th>
-                <th></th> 
-            </tr>
+                <th>Rediger</th>  <th>Slet</th>     </tr>
         </thead>
         <tbody>
             {% for ticket in tickets %}
             <tr>
-                <td>{{ ticket.id }}</td>
-                <td>{{ ticket.lejer }}</td>
-                <td>{{ ticket.beskrivelse }}</td>
-                <td>{{ ticket.status }}</td>
-                <td>{{ ticket.udlejer }}</td>
-                <td>{{ ticket.håndværker }}</td>
-                <td>
-                    <a href="/edit/{{ ticket.id }}">Rediger</a>
-                </td>
-                <td>
-                    <form action="/delete/{{ ticket.id }}" method="post">
+                <td data-label="ID">{{ ticket.id }}</td>
+                <td data-label="Lejer">{{ ticket.lejer }}</td>
+                <td data-label="Beskrivelse">{{ ticket.beskrivelse }}</td>
+                <td data-label="Status">{{ ticket.status }}</td>
+                <td data-label="Udlejer">{{ ticket.udlejer }}</td>
+                <td data-label="Håndværker">{{ ticket.håndværker }}</td>
+                <td data-label="Rediger">  <a href="/edit/{{ ticket.id }}">Rediger</a>  </td>
+                <td data-label="Slet">  <form action="/delete/{{ ticket.id }}" method="post">
                         <input type="submit" value="Slet">
                     </form>
                 </td>
