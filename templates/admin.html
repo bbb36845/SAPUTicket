@@ -12,15 +12,24 @@
             padding: 8px;
             text-align: left;
         }
-        /* Styling af knapper i formularer */
-         input[type="submit"], button {
-            background-color: #4CAF50; /* Grøn knap */
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            text-decoration: none; /*Fjern understregning*/
-            display: inline-block; /* Sørg for at bredde og højde respekteres */
+
+        /* Styling af submit-knapper OG links, der skal ligne knapper */
+        input[type="submit"],
+        a.button-lookalike {
+            background-color: #4CAF50; /* Grøn baggrund */
+            color: white;          /* Hvid tekst */
+            padding: 10px 20px;    /* Indvendig plads */
+            border: none;         /* Ingen kant */
+            cursor: pointer;       /* Musemarkør som en hånd */
+            text-decoration: none; /* Ingen understregning (vigtigt for links) */
+            display: inline-block; /* Tillad bredde/højde/padding */
+            border-radius: 4px;   /* Afrundede hjørner (valgfrit) */
+        }
+
+        /* Styling ved hover (valgfrit) */
+        input[type="submit"]:hover,
+        a.button-lookalike:hover {
+            background-color: #3e8e41; /* Mørkere grøn ved hover */
         }
 
         .flashes {
@@ -79,7 +88,7 @@
                 <td data-label="Udlejer">{{ ticket.udlejer }}</td>
                 <td data-label="Håndværker">{{ ticket.håndværker }}</td>
                 <td data-label="Rediger">
-                    <a href="/edit/{{ ticket.id }}">Rediger</a>
+                    <a href="/edit/{{ ticket.id }}" class="button-lookalike">Rediger</a>
                 </td>
                 <td data-label="Slet">
                     <form action="/delete/{{ ticket.id }}" method="post">
