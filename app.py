@@ -44,83 +44,43 @@ class User(flask_login.UserMixin):
         self.unit_id = unit_id
 
 def get_db_connection():
-    print(f"--- DEBUG: get_db_connection() ---")  # Tilføjet debugging
-    print(f"  DATABASE: {DATABASE}")  # Tilføjet debugging
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
-    print(f"  Forbindelse oprettet: {conn}")  # Tilføj debugging
     return conn
 
 def init_db():
-    print("INIT_DB: START")  # Ekstra debugging
     try:
         conn = get_db_connection()
-        print(f"INIT_DB: Forbindelse oprettet: {conn}")
         with open(SCHEMA, 'r') as f:
-            print(f"INIT_DB: Åbner schemafil: {SCHEMA}")
-            sql_script = f.read()
-            print(f"INIT_DB: SQL script læst. Længde: {len(sql_script)}")
-            # print(f"INIT_DB: SQL script:\n{sql_script}") # Fjern denne, hvis schema.sql er ok
-            conn.executescript(sql_script)
+            conn.executescript(f.read())
         conn.commit()
         conn.close()
-        print("INIT_DB: Afsluttet uden fejl (forhåbentlig).")
-
-        # --- EKSTRA DEBUGGING: List tabeller EFTER init_db() ---
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = cursor.fetchall()
-        conn.close()
-        print(f"INIT_DB: Tabeller efter initialisering: {tables}")
-        # --- SLUT på ekstra debugging ---
-
     except Exception as e:
         print(f"Fejl i init_db(): {e}")
-        import traceback
-        traceback.print_exc()
-    finally:
-        if 'conn' in locals() and conn:
-            conn.close()
-            print("INIT_DB: Forbindelse lukket (finally).")
-
-# TVING init_db() til at køre - fjern betingelsen.
-init_db()
 
 def get_user(username):
-    print(f"--- DEBUG: get_user({username}) ---")
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        print(f"  SQL: SELECT * FROM users WHERE username = '{username}'")
         cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
         user_data = cursor.fetchone()
 
-        print(f"  SQL-forespørgsel udført.")
-
         if user_data:
-            print(f"  Bruger fundet i DB (rå data): {user_data}")
-            # --- DEBUG: Vis dataene som dictionary ---
-            print("  Brugerdata som dictionary:")
-            for key, value in user_data.items():
-                print(f"    {key}: {value!r}")
-            # --- SLUT på DEBUG ---
             user = User(user_data['id'], user_data['username'], user_data['password_hash'], user_data['role'], user_data['invitation_token'], user_data['invited_by'], user_data['unit_id'])
-            print(f"  User objekt oprettet: {user.username}")
             return user
         else:
-            print("  Bruger ikke fundet i DB.")
             return None
     except Exception as e:
-        print(f"--- DEBUG: Fejl i get_user(): {e}")
-        import traceback
-        traceback.print_exc()
-        return None  # Vigtigt: Returner None ved fejl
+        print(f"Fejl i get_user(): {e}")
+        return None
     finally:
         conn.close()
-        print("--- DEBUG: get_user() afsluttes ---")
 
-@app.route("/")
+# Kør init_db() HVIS databasen ikke eksisterer.
+if not os.path.exists(DATABASE):
+    init_db()
+
+@app.route("/")  # <--- DENNE LINJE ER VIGTIG!
 def index():
     conn = get_db_connection()
     try:
@@ -243,38 +203,21 @@ def ticket_detail(ticket_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    print("--- DEBUG: login() START ---")
     if request.method == 'POST':
-        print("--- DEBUG: POST request ---")
         username = request.form['username']
         password = request.form['password']
-        print(f"  Indtastet brugernavn: {username}")
-        print(f"  Indtastet adgangskode: {password}")
 
         user = get_user(username)
 
-        if user:
-            print(f"  Bruger fundet: {user.username}")
-            print(f"  Hashed password fra DB: {user.password_hash}")  # Rå bytes
-            is_valid = check_password_hash(user.password_hash, password)
-            print(f"  Password check resultat: {is_valid}")
-
-            if is_valid:
-                print("  Logger ind...")
-                flask_login.login_user(user)
-                flash('Du er nu logget ind!', 'success')
-                return redirect('/admin')  # Eller en anden beskyttet side
-            else:
-                print("  Password forkert.")
-                flash('Forkert brugernavn eller adgangskode.', 'error')
-                return redirect('/login')
+        if user and check_password_hash(user.password_hash, password):
+            flask_login.login_user(user)
+            flash('Du er nu logget ind!', 'success')
+            return redirect('/admin')  # Eller en anden beskyttet side
         else:
-            print("  Bruger IKKE fundet.")
             flash('Forkert brugernavn eller adgangskode.', 'error')
             return redirect('/login')
 
     else:
-        print("--- DEBUG: login() GET request ---")
         return render_template('login.html')
 
 @app.route('/logout')
@@ -285,51 +228,39 @@ def logout():
     return redirect(url_for('index')) # omdiriger til index
 
 @app.route('/register', methods=['GET', 'POST'])
-#@flask_login.login_required # Fjern midlertidigt, for test.
 def register():
-    # Tjek om brugeren er admin
-    #if flask_login.current_user.role != 'admin':
-    #    flash('Du har ikke tilladelse til at oprette brugere.', 'error')
-    #    return redirect(url_for('index'))  # Eller en anden passende side
 
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        #role = request.form['role'] #Ikke længere del af formular.
-        role = "lejer"  # Sæt rollen automatisk til "lejer" - vi ændrer dette senere!
-        unit_id = 1 #Hardcoded, skal ændres.
+        role = "lejer"
+        unit_id = 1
 
-        # --- Validering (start) ---
-        errors = []  # Opret en liste til at holde styr på fejl
+        errors = []
 
         if not username:
             errors.append('Brugernavn er påkrævet.')
         if not password:
             errors.append('Adgangskode er påkrævet.')
         if not confirm_password:
-            errors.append('Bekræft adgangskode er påkrævet.')  # Lidt overflødig, da HTML har 'required', men god praksis
+            errors.append('Bekræft adgangskode er påkrævet.')
         if password != confirm_password:
             errors.append('Adgangskoderne stemmer ikke overens.')
 
-        # Tjek om brugernavn eksisterer (mere effektiv forespørgsel)
         conn = get_db_connection()
         existing_user = conn.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone()
         conn.close()
         if existing_user:
             errors.append('Brugernavnet er allerede i brug.')
 
-        # Hvis der er fejl, vis formularen igen med fejlbeskeder
         if errors:
             for error in errors:
                 flash(error, 'error')
-            return render_template('register.html', username=username, role=role)  # Send evt. eksisterende input tilbage
-        # --- Validering (slut) ---
+            return render_template('register.html', username=username, role=role)
 
-        # Hash adgangskoden
-        hashed_password = generate_password_hash(password)
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-        # Opret bruger i databasen
         conn = get_db_connection()
         try:
             conn.execute(
@@ -338,12 +269,15 @@ def register():
             )
             conn.commit()
             flash('Bruger oprettet!', 'success')
-            return redirect(url_for('login'))  # Eller en anden passende side (f.eks. en liste over brugere)
+            return redirect(url_for('login'))
         except Exception as e:
             print(f"Fejl ved oprettelse af bruger: {e}")
-            flash(f'Fejl ved oprettelse af bruger. Se server log for detaljer.', 'error')  # Mere generel fejlbesked til brugeren
-            conn.rollback()  # Rul tilbage, hvis der sker en fejl
+            flash(f'Fejl ved oprettelse af bruger. Se server log for detaljer.', 'error')
+            conn.rollback()
         finally:
             conn.close()
 
-    return render_template('register.html')  # Vis formularen (GET request)
+    return render_template('register.html')
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5001)

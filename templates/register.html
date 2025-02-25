@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Opret bruger</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+         .flashes {
+            list-style: none;
+            padding: 0;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        a.button-lookalike {
+            background-color: #4CAF50; /* Grøn baggrund */
+            color: white;          /* Hvid tekst */
+            padding: 10px 20px;    /* Indvendig plads */
+            border: none;         /* Ingen kant */
+            cursor: pointer;       /* Musemarkør som en hånd */
+            text-decoration: none; /* Ingen understregning (vigtigt for links) */
+            display: inline-block; /* Tillad bredde/højde/padding */
+            border-radius: 4px;   /* Afrundede hjørner (valgfrit) */
+            font-size: 16px;      /* Samme skriftstørrelse */
+            font-family: inherit;  /* Arv font fra parent (body) */
+        }
+    </style>
+</head>
+<body>
+    <h1>Opret bruger</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form action="/register" method="post">
+        <label for="username">Brugernavn:</label><br>
+        <input type="text" id="username" name="username" required><br><br>
+
+        <label for="password">Adgangskode:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <label for="confirm_password">Bekræft adgangskode:</label><br>
+        <input type="password" id="confirm_password" name="confirm_password" required><br><br>
+
+        <input type="submit" value="Opret bruger">
+    </form>
+</body>
+</html>

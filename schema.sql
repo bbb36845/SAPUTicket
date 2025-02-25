@@ -34,4 +34,14 @@ CREATE TABLE units (
 );
 
 CREATE TABLE tickets (
-    id INTEGER PRIMARY
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lejer TEXT NOT NULL,
+    beskrivelse TEXT NOT NULL,
+    status TEXT NOT NULL,
+    udlejer TEXT NOT NULL,
+    håndværker TEXT,
+    user_id INTEGER,
+    unit_id INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (unit_id) REFERENCES units(id)
+);
