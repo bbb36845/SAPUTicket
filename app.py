@@ -305,7 +305,7 @@ def register():
         # --- Validering (slut) ---
 
         # Hash adgangskoden
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
 
         # Opret bruger i databasen
         conn = get_db_connection()
