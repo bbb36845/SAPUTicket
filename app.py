@@ -22,14 +22,12 @@ login_manager.login_view = 'login'  # Fortæl Flask-Login, hvor login-siden er
 def load_user(user_id):
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    conn.close()
     if user:
-        conn.close()
         return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'],
                     user['invited_by'], user['unit_id'])
-    else:
-        conn.close()
-        return None
-    
+    return None
+
 # --- Context Processor ---
 @app.context_processor
 def inject_login():
@@ -67,32 +65,22 @@ def init_db():
         print(f"Fejl i init_db(): {e}")
 
 def get_user(username):
-    print(f"--- DEBUG: get_user({username}) ---")
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        print(f"  SQL: SELECT * FROM users WHERE username = '{username}'")
         cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
         user_data = cursor.fetchone()
 
-        print(f"  SQL-forespørgsel udført.")
-
         if user_data:
-            print(f"  Bruger fundet i DB (rå data): {user_data}")
             user = User(user_data['id'], user_data['username'], user_data['password_hash'], user_data['role'], user_data['invitation_token'], user_data['invited_by'], user_data['unit_id'])
-            print(f"  User objekt oprettet: {user.username}")  # Tilføj evt. user.id
             return user
         else:
-            print("  Bruger ikke fundet i DB.")
             return None
     except Exception as e:
-        print(f"--- DEBUG: Fejl i get_user(): {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Fejl i get_user(): {e}")
         return None
     finally:
         conn.close()
-        print("--- DEBUG: get_user() afsluttes ---")
 
 # Kør init_db() HVIS databasen ikke eksisterer.
 if not os.path.exists(DATABASE):
@@ -118,17 +106,16 @@ def create_ticket():
     beskrivelse = request.form["beskrivelse"]
     udlejer = request.form["udlejer"]
 
-    # Hent unit_id fra den bruger der er logget ind:
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT unit_id FROM users WHERE id = ?", (flask_login.current_user.id,)
-    )
-    unit_id = cur.fetchone()[0] #Henter unit_id fra den bruger der er logget ind.
-    conn.close()
-
     conn = get_db_connection()
     try:
+        #Hent unit_id fra den bruger der er logget ind:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT unit_id FROM users WHERE id = ?", (flask_login.current_user.id,)
+        )
+        unit_id = cur.fetchone()[0]
+
+
         conn.execute(
             "INSERT INTO tickets (lejer, beskrivelse, status, udlejer, user_id, unit_id) VALUES (?, ?, ?, ?, ?, ?)",
             (lejer, beskrivelse, "Oprettet", udlejer, flask_login.current_user.id, unit_id),
@@ -138,7 +125,7 @@ def create_ticket():
     except Exception as e:
         print(f"Fejl ved oprettelse af ticket: {e}")
         flash(f'Fejl ved oprettelse af ticket: {e}', 'error')
-        conn.rollback()
+        conn.rollback()  # Tilføjet rollback
     finally:
         conn.close()
     return redirect("/")
@@ -147,8 +134,13 @@ def create_ticket():
 @flask_login.login_required
 def admin():
     conn = get_db_connection()
-    tickets = conn.execute('SELECT * FROM tickets').fetchall()
-    conn.close()
+    try:
+        tickets = conn.execute('SELECT * FROM tickets').fetchall()
+    except Exception as e:
+        print(f"Fejl ved hentning af tickets til admin: {e}")  # Opdateret print statement
+        tickets = []
+    finally:
+        conn.close()
     return render_template("admin.html", tickets=tickets)
 
 @app.route("/delete/<int:ticket_id>", methods=["POST"])
@@ -170,15 +162,18 @@ def delete_ticket(ticket_id):
 @flask_login.login_required
 def edit_ticket(ticket_id):
     conn = get_db_connection()
-    ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
-    conn.close()
-
-    if ticket is None:
-        flash('Ticket findes ikke!', 'error')
-        return redirect('/admin')  # Eller vis en 404-side
-
-    return render_template("edit.html", ticket=ticket)
-
+    try:
+        ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
+        if ticket is None:
+            flash('Ticket findes ikke!', 'error')
+            return redirect('/admin')
+        return render_template("edit.html", ticket=ticket)
+    except Exception as e:
+        print(f"Fejl ved hentning af ticket for redigering: {e}")
+        flash('Fejl ved hentning af ticket til redigering', 'error')
+        return redirect('/admin')
+    finally:
+        conn.close()
 
 @app.route("/edit/<int:ticket_id>", methods=["POST"])
 @flask_login.login_required
@@ -188,7 +183,6 @@ def update_ticket(ticket_id):
     status = request.form["status"]
     udlejer = request.form["udlejer"]
     håndværker = request.form["håndværker"]
-
 
     conn = get_db_connection()
     try:
@@ -210,104 +204,77 @@ def update_ticket(ticket_id):
 @flask_login.login_required
 def ticket_detail(ticket_id):
     conn = get_db_connection()
-    ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
-    conn.close()
-
-    if ticket is None:
-        flash('Ticket findes ikke!', 'error')
-        return redirect('/admin')  # Eller vis en 404-side
-
-    return render_template("ticket.html", ticket=ticket)
+    try:
+        ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
+        if ticket is None:
+            flash('Ticket findes ikke!', 'error')
+            return redirect('/admin')
+        return render_template("ticket.html", ticket=ticket)
+    except Exception as e:
+        print(f"Fejl ved hentning af ticket detaljer: {e}")
+        flash(f'Fejl ved hentning af ticket detaljer', 'error')
+        return redirect('/admin')
+    finally:
+        conn.close()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    print("--- DEBUG: login() START ---")
     if request.method == 'POST':
-        print("--- DEBUG: POST request ---")
         username = request.form['username']
         password = request.form['password']
-        print(f"  Indtastet brugernavn: {username}")
-        print(f"  Indtastet adgangskode: {password}")
 
         user = get_user(username)
 
-        if user:
-            print(f"  Bruger fundet: {user.username}")
-            print(f"  Hashed password fra DB: {user.password_hash}")  # Rå bytes
-            is_valid = check_password_hash(user.password_hash, password)
-            print(f"  Password check resultat: {is_valid}")
-
-            if is_valid:
-                print("  Logger ind...")
-                flask_login.login_user(user)
-                flash(f'Velkommen {user.username}!', 'success')
-                return redirect('/admin')  # Eller en anden beskyttet side
-            else:
-                print("  Password forkert.")
-                flash('Forkert brugernavn eller adgangskode.', 'error')
-                return redirect('/login')
+        if user and check_password_hash(user.password_hash, password):
+            flask_login.login_user(user)
+            flash(f'Velkommen {user.username}!', 'success')
+            return redirect('/admin')  # Eller en anden beskyttet side
         else:
-            print("  Bruger IKKE fundet.")
             flash('Forkert brugernavn eller adgangskode.', 'error')
             return redirect('/login')
 
-    else:
-        print("--- DEBUG: login() GET request ---")
-        return render_template('login.html')
+    return render_template('login.html')
 
 @app.route('/logout')
 @flask_login.login_required
 def logout():
     flask_login.logout_user()
     flash('Du er nu logget ud!', 'success')
-    return redirect(url_for('index')) # omdiriger til index
+    return redirect(url_for('index'))
 
 @app.route('/register', methods=['GET', 'POST'])
-#@flask_login.login_required # Fjern midlertidigt, for test.
 def register():
-    # Tjek om brugeren er admin
-    #if flask_login.current_user.role != 'admin':
-    #    flash('Du har ikke tilladelse til at oprette brugere.', 'error')
-    #    return redirect(url_for('index'))  # Eller en anden passende side
-
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        # role = request.form['role'] #Ikke længere del af formular.
-        role = "lejer"  # Sæt rollen automatisk til "lejer" - vi ændrer dette senere!
-        unit_id = 1  # Hardcoded, skal ændres.
+        role = "lejer"
+        unit_id = 1
 
-        # --- Validering (start) ---.
-        errors = []  # Opret en liste til at holde styr på fejl
+        errors = []
 
         if not username:
             errors.append('Brugernavn er påkrævet.')
         if not password:
             errors.append('Adgangskode er påkrævet.')
         if not confirm_password:
-            errors.append('Bekræft adgangskode er påkrævet.')  # Lidt overflødig, da HTML har 'required', men god praksis
+            errors.append('Bekræft adgangskode er påkrævet.')
         if password != confirm_password:
             errors.append('Adgangskoderne stemmer ikke overens.')
 
-        # Tjek om brugernavn eksisterer (mere effektiv forespørgsel)
         conn = get_db_connection()
         existing_user = conn.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone()
         conn.close()
         if existing_user:
             errors.append('Brugernavnet er allerede i brug.')
 
-        # Hvis der er fejl, vis formularen igen med fejlbeskeder
         if errors:
             for error in errors:
                 flash(error, 'error')
             return render_template('register.html', username=username, role=role)
-        # --- Validering (slut) ---
 
-        # Hash adgangskoden
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=16)
 
-        # Opret bruger i databasen
         conn = get_db_connection()
         try:
             conn.execute(
@@ -327,4 +294,4 @@ def register():
     return render_template('register.html')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+     app.run(debug=True, port=5001)
