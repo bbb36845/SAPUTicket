@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = 'en_super_hemmelig_nøgle'  # Skift dette i produktion!
 
-# Brug absolut sti til databasen OG schema.sql
+# Brug absolut sti til databasen OG schema.sql.
 DATABASE = os.path.join(app.root_path, 'tickets.db')
 SCHEMA = os.path.join(app.root_path, 'schema.sql')
 
@@ -22,11 +22,14 @@ login_manager.login_view = 'login'  # Fortæl Flask-Login, hvor login-siden er
 def load_user(user_id):
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-    conn.close()
     if user:
-        return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'], user['invited_by'], user['unit_id'])
-    return None
-
+        conn.close()
+        return User(user['id'], user['username'], user['password_hash'], user['role'], user['invitation_token'],
+                    user['invited_by'], user['unit_id'])
+    else:
+        conn.close()
+        return None
+    
 # --- Context Processor ---
 @app.context_processor
 def inject_login():
@@ -49,7 +52,10 @@ def get_db_connection():
     return conn
 
 def init_db():
+    """Initialiserer databasen ved at køre schema.sql."""
     try:
+        print("init_db() starter...")
+
         conn = get_db_connection()
         with open(SCHEMA, 'r') as f:
             conn.executescript(f.read())
@@ -57,6 +63,7 @@ def init_db():
         conn.close()
         print("init_db() afsluttet uden fejl.")
     except Exception as e:
+        print("init_db() fejlede.")
         print(f"Fejl i init_db(): {e}")
 
 def get_user(username):
@@ -111,13 +118,13 @@ def create_ticket():
     beskrivelse = request.form["beskrivelse"]
     udlejer = request.form["udlejer"]
 
-    #Hent unit_id fra den bruger der er logget ind:
+    # Hent unit_id fra den bruger der er logget ind:
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
         "SELECT unit_id FROM users WHERE id = ?", (flask_login.current_user.id,)
     )
-    unit_id = cur.fetchone()[0]
+    unit_id = cur.fetchone()[0] #Henter unit_id fra den bruger der er logget ind.
     conn.close()
 
     conn = get_db_connection()
@@ -131,7 +138,7 @@ def create_ticket():
     except Exception as e:
         print(f"Fejl ved oprettelse af ticket: {e}")
         flash(f'Fejl ved oprettelse af ticket: {e}', 'error')
-        # Overvej at rulle transaktionen tilbage: conn.rollback()
+        conn.rollback()
     finally:
         conn.close()
     return redirect("/")
@@ -194,7 +201,7 @@ def update_ticket(ticket_id):
     except Exception as e:
         print(f"Fejl ved opdatering af ticket: {e}")
         flash(f'Fejl ved opdatering af ticket: {e}', 'error')
-        # Evt. conn.rollback()
+        conn.rollback()
     finally:
         conn.close()
     return redirect("/admin")
@@ -233,7 +240,7 @@ def login():
             if is_valid:
                 print("  Logger ind...")
                 flask_login.login_user(user)
-                flash('Du er nu logget ind!', 'success')
+                flash(f'Velkommen {user.username}!', 'success')
                 return redirect('/admin')  # Eller en anden beskyttet side
             else:
                 print("  Password forkert.")
@@ -267,11 +274,11 @@ def register():
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        #role = request.form['role'] #Ikke længere del af formular.
+        # role = request.form['role'] #Ikke længere del af formular.
         role = "lejer"  # Sæt rollen automatisk til "lejer" - vi ændrer dette senere!
-        unit_id = 1 #Hardcoded, skal ændres.
+        unit_id = 1  # Hardcoded, skal ændres.
 
-        # --- Validering (start) ---
+        # --- Validering (start) ---.
         errors = []  # Opret en liste til at holde styr på fejl
 
         if not username:
@@ -294,7 +301,7 @@ def register():
         if errors:
             for error in errors:
                 flash(error, 'error')
-            return render_template('register.html', username=username, role=role)  # Send evt. eksisterende input tilbage
+            return render_template('register.html', username=username, role=role)
         # --- Validering (slut) ---
 
         # Hash adgangskoden
@@ -309,15 +316,15 @@ def register():
             )
             conn.commit()
             flash('Bruger oprettet!', 'success')
-            return redirect(url_for('login'))  # Eller en anden passende side (f.eks. en liste over brugere)
+            return redirect(url_for('login'))
         except Exception as e:
             print(f"Fejl ved oprettelse af bruger: {e}")
-            flash(f'Fejl ved oprettelse af bruger. Se server log for detaljer.', 'error')  # Mere generel fejlbesked til brugeren
-            conn.rollback()  # Rul tilbage, hvis der sker en fejl
+            flash(f'Fejl ved oprettelse af bruger. Se server log for detaljer.', 'error')
+            conn.rollback()
         finally:
             conn.close()
 
-    return render_template('register.html')  # Vis formularen (GET request)
+    return render_template('register.html')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
