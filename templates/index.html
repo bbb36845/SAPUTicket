@@ -1,199 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="da">
 <head>
-    <title>Ticket System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Oversigt</title>
     <style>
-        /* Grundlæggende styling */
         body {
-            font-family: sans-serif;
+            font-family: Arial, sans-serif;
             margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
         }
-
-        label {
-            display: block; /* Labels på egne linjer */
-            margin-bottom: 5px;
+        h1 {
+            text-align: center;
+            color: #444;
+            margin-bottom: 30px;
         }
-
-        input[type="text"],
-        textarea,
-        select {
-            width: 100%; /* Fuld bredde på inputfelter */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
             padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            box-sizing: border-box; /* Inkluder padding og border i bredden */
+            text-align: left;
+            border-bottom: 1px solid #ddd;
         }
-
-        input[type="submit"] {
-            background-color: #4CAF50; /* Grøn knap */
+        th {
+            background-color: #f0f0f0;
+        }
+        .create-button {
+            display: block;
+            background-color: #4CAF50;
             color: white;
             padding: 10px 20px;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            margin-bottom: 20px;
         }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        /* Responsivt design (simpel) */
-        @media (max-width: 600px) {
-            /* Skift til en-søjle layout på små skærme */
-            table, thead, tbody, th, td, tr {
-                display: block;
-            }
-
-            /* Skjul tabeloverskrifter på små skærme */
-            thead tr {
-                position: absolute;
-                top: -9999px;
-                left: -9999px;
-            }
-
-            td {
-                /* Vær som en række */
-                border: none;
-                border-bottom: 1px solid #ddd;
-                position: relative;
-                padding-left: 50%; /* Giv plads til "label" */
-                white-space: normal;
-                text-align:left;
-            }
-
-            td:before {
-                /* Vis "label" til venstre for data */
-                position: absolute;
-                top: 6px;
-                left: 6px;
-                width: 45%;
-                padding-right: 10px;
-                white-space: nowrap;
-                text-align:left;
-                font-weight: bold;
-            }
-
-            /* Sæt "labels" for hver celle */
-            td:before { content: attr(data-label); }
-        }
-        /* Styling af submit-knapper OG links, der skal ligne knapper */
-        input[type="submit"],
-        a.button-lookalike {
-            background-color: #4CAF50; /* Grøn baggrund */
-            color: white;          /* Hvid tekst */
-            padding: 10px 20px;    /* Indvendig plads */
-            border: none;         /* Ingen kant */
-            cursor: pointer;       /* Musemarkør som en hånd */
-            text-decoration: none; /* Ingen understregning (vigtigt for links) */
-            display: inline-block; /* Tillad bredde/højde/padding */
-            border-radius: 4px;   /* Afrundede hjørner (valgfrit) */
-            font-size: 16px;      /* Samme skriftstørrelse */
-            font-family: inherit;  /* Arv font fra parent (body) */
-        }
-
-        /* Styling ved hover (valgfrit) */
-        input[type="submit"]:hover,
-        a.button-lookalike:hover {
-            background-color: #3e8e41; /* Mørkere grøn ved hover */
-        }
-        a {
-            color: blue; /* Link farve */
-            text-decoration: none; /*Fjern understregning*/
+        .create-button:hover {
+            background-color: #45a049;
         }
         .flashes {
-            list-style: none;
-            padding: 0;
+          list-style: none;
+          padding: 0;
+          margin-bottom: 20px;
         }
-
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            margin-bottom: 10px;
+        .flashes li {
+          padding: 10px;
+          margin-bottom: 5px;
+          border-radius: 4px;
         }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            padding: 10px;
-            margin-bottom: 10px;
+        .flashes .success {
+          background-color: #d4edda;
+          border: 1px solid #c3e6cb;
+          color: #155724;
+        }
+        .flashes .error {
+          background-color: #f8d7da;
+          border: 1px solid #f5c6cb;
+          color: #721c24;
         }
     </style>
 </head>
 <body>
-    {% if flask_login.current_user.is_authenticated %}
-    <p>Logget ind som: {{ flask_login.current_user.username }} <a class="button-lookalike" href="{{ url_for('logout') }}">Log ud</a></p>
-    {% else %}
-        <p><a class="button-lookalike" href="{{ url_for('login') }}">Log ind</a></p>
-    {% endif %}
+    <div class="container">
+        <h1>Ticket Oversigt</h1>
 
-    {% if flask_login.current_user.is_authenticated %}
-        {% if flask_login.current_user.role == 'admin' %}
-            <p><a class="button-lookalike" href="{{ url_for('admin') }}">Admin Panel</a></p>
-        {% endif %}
-    {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flashes">
+              {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        
+        <a href="/admin" class="create-button">Opret ny ticket</a>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes">
-          {% for category, message in messages %}
-            <li class="{{ category }}">{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-
-    <h2>Opret ny ticket</h2>
-    <form action="/create" method="post">
-        <label for="lejer">Lejer:</label><br>
-        <input type="text" id="lejer" name="lejer" required><br><br>
-
-        <label for="beskrivelse">Beskrivelse:</label><br>
-        <textarea id="beskrivelse" name="beskrivelse" rows="4" cols="50" required></textarea><br><br>
-
-        <label for="udlejer">Udlejer:</label><br>
-         <select id="udlejer" name="udlejer" required>
-            <option value="Poseidon Ejendomme">Poseidon Ejendomme</option>
-            <option value="Andreasen Ejendomme">Andreasen Ejendomme</option>
-            <option value="Vedbækhus">Vedbækhus</option>
-            <option value="Ishockey ApS">Ishockey ApS</option>
-         </select><br><br>
-
-        <input type="submit" value="Opret">
-    </form>
-
-
-    <h1>Tickets</h1>
-    
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Lejer</th>
-                <th>Beskrivelse</th>
-                <th>Status</th>
-                <th>Udlejer</th>
-                <th>Håndværker</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for ticket in tickets %}
-            <tr>
-                <td data-label="ID">{{ ticket.id }}</td>
-                <td data-label="Lejer">{{ ticket.lejer }}</td>
-                <td data-label="Beskrivelse">{{ ticket.beskrivelse }}</td>
-                <td data-label="Status">{{ ticket.status }}</td>
-                <td data-label="Udlejer">{{ ticket.udlejer }}</td>
-                <td data-label="Håndværker">{{ ticket.håndværker }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <table>
+            <thead>
+                <tr>
+                    <th>Lejer</th>
+                    <th>Beskrivelse</th>
+                    <th>Status</th>
+                    <th>Udlejer</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr>
+                    <td>{{ ticket.lejer }}</td>
+                    <td>{{ ticket.beskrivelse }}</td>
+                    <td>{{ ticket.status }}</td>
+                    <td>{{ ticket.udlejer }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>
