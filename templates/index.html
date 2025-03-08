@@ -53,24 +53,24 @@
             background-color: #45a049;
         }
         .flashes {
-          list-style: none;
-          padding: 0;
-          margin-bottom: 20px;
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
         }
         .flashes li {
-          padding: 10px;
-          margin-bottom: 5px;
-          border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
         }
         .flashes .success {
-          background-color: #d4edda;
-          border: 1px solid #c3e6cb;
-          color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
         }
         .flashes .error {
-          background-color: #f8d7da;
-          border: 1px solid #f5c6cb;
-          color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
         }
 
         /* Styling for opret ticket form */
@@ -114,17 +114,17 @@
         <h1>Ticket Oversigt</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <ul class="flashes">
-              {% for category, message in messages %}
-                <li class="{{ category }}">{{ message }}</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
+        {% if messages %}
+        <ul class="flashes">
+            {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
         {% endwith %}
 
         <h2>Opret ny Ticket</h2>
-        <form method="POST" action="/">
+        <form method="POST" action="/create">
             <label for="lejer">Lejer:</label>
             <input type="text" id="lejer" name="lejer" required>
 
