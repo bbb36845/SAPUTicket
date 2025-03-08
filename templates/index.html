@@ -72,6 +72,41 @@
           border: 1px solid #f5c6cb;
           color: #721c24;
         }
+
+        /* Styling for opret ticket form */
+        form {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        form input[type="text"],
+        form textarea,
+        form select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        form button[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        form button[type="submit"]:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -87,9 +122,38 @@
             </ul>
           {% endif %}
         {% endwith %}
-        
-        <a href="/admin" class="create-button">Opret ny ticket</a>
 
+        <h2>Opret ny Ticket</h2>
+        <form method="POST" action="/">
+            <label for="lejer">Lejer:</label>
+            <input type="text" id="lejer" name="lejer" required>
+
+            <label for="beskrivelse">Beskrivelse:</label>
+            <textarea id="beskrivelse" name="beskrivelse" required></textarea>
+
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Oprettet">Oprettet</option>
+                <option value="Igangsat">Igangsat</option>
+                <option value="Afventer">Afventer</option>
+                <option value="Afsluttet">Afsluttet</option>
+            </select>
+
+            <label for="udlejer">Udlejer:</label>
+            <select id="udlejer" name="udlejer" required>
+                <option value="Poseidon Ejendomme">Poseidon Ejendomme</option>
+                <option value="Andreasen Ejendomme">Andreasen Ejendomme</option>
+                <option value="Vedbækhus">Vedbækhus</option>
+                <option value="Ishockey ApS">Ishockey ApS</option>
+            </select>
+
+            <label for="håndværker">Håndværker:</label>
+            <input type="text" id="håndværker" name="håndværker">
+            <br>
+            <button type="submit">Opret Ticket</button>
+        </form>
+
+        <h2>Eksisterende Tickets</h2>
         <table>
             <thead>
                 <tr>
