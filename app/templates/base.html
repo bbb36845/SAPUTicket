@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Standardsidetitel{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tilføjet eksterne CSS-filer -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    {# Placer script-tags EFTER style-tagget, og FØR body-tagget #}
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-container">
+            <div class="logo">SAPU Ticket</div>
+            <div class="nav-links">
+                {% if flask_login.current_user.is_authenticated %}
+                    <div class="user-info">
+                        <i class="fas fa-user"></i> Logget ind som: {{ flask_login.current_user.username }}
+                    </div>
+                    <a href="{{ url_for('index') }}" class="button-lookalike">
+                        <i class="fas fa-home"></i> Hjem
+                    </a>
+                    {% if flask_login.current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin') }}" class="button-lookalike">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                    {% endif %}
+                    {% if flask_login.current_user.role == 'udlejer' %}
+                        <a href="{{ url_for('udlejer_dashboard') }}" class="button-lookalike">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    {% endif %}
+                    {% if flask_login.current_user.role == 'craftsman' %}
+                        <a href="{{ url_for('craftsman_dashboard') }}" class="button-lookalike">
+                            <i class="fas fa-tools"></i> Håndværker Dashboard
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="button-lookalike">
+                        <i class="fas fa-sign-out-alt"></i> Log ud
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="button-lookalike">
+                        <i class="fas fa-sign-in-alt"></i> Log ind
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container">
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <script>
+        $(document).ready(function() {
+            // Funktion til at initialisere Select2 (kaldes kun, når det er relevant)
+            function initializeSelect2() {
+                $('#unit_id').select2({
+                    placeholder: "Vælg et lejemål",
+                    allowClear: true
+                });
+            }
+        
+            // Funktion til at vise/skjule lejemål dropdown
+            function toggleUnitSelection() {
+                if ($('#role').val() == 'lejer') {
+                    $('#unit-selection').show();
+                    initializeSelect2(); // Initialiser Select2, når feltet vises
+                } else {
+                    $('#unit-selection').hide();
+                    $('#unit_id').val(null).trigger('change'); // Nulstil Select2
+                }
+            }
+        
+            // Lyt efter ændringer i rolle-dropdown
+            $('#role').change(toggleUnitSelection);
+        
+            // Initial visning ved indlæsning af siden
+            toggleUnitSelection();
+
+            // Initialiser alle Select2 elementer
+            $('.select2').select2({
+                placeholder: "Vælg",
+                allowClear: true
+            });
+        });
+        </script>
+</body>
+</html>
