@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}SAPUTicket - Serverfejl{% endblock %}
+
+{% block content %}
+<div class="error-container text-center py-5">
+    <div class="error-code">
+        <h1 class="display-1">500</h1>
+    </div>
+    <div class="error-message">
+        <h2>Ups! Noget gik galt.</h2>
+        <p class="lead">Der opstod en fejl på serveren. Vi arbejder på at løse problemet.</p>
+    </div>
+    <div class="error-actions mt-4">
+        <a href="{{ url_for('common.index') }}" class="btn btn-primary">
+            <i class="fas fa-home mr-2"></i> Tilbage til forsiden
+        </a>
+        <a href="{{ url_for('common.contact') }}" class="btn btn-outline ml-3">
+            <i class="fas fa-envelope mr-2"></i> Kontakt support
+        </a>
+    </div>
+    <div class="error-image mt-5">
+        <img src="{{ url_for('static', filename='images/500.svg') }}" alt="500 illustration" style="max-width: 400px;">
+    </div>
+</div>
+{% endblock %} 

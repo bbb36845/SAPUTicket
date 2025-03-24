@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Administrer Ejendomme{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Administrer Ejendomme</h1>
+
+    <div class="action-bar top-actions">
+        <a href="{{ url_for('admin_create_property') }}" class="button-lookalike">
+            <i class="fas fa-plus"></i> Opret ejendom
+        </a>
+        <a href="{{ url_for('admin') }}" class="button-lookalike button-secondary">
+            <i class="fas fa-arrow-left"></i> Tilbage til admin panel
+        </a>
+    </div>
+
+    <div class="admin-section">
+        <h2>Eksisterende ejendomme</h2>
+        
+        <div class="filter-section">
+            <div class="filter-group">
+                <label for="owner-filter">Filtrer efter udlejer:</label>
+                <select id="owner-filter" class="select2">
+                    <option value="">Alle udlejere</option>
+                    {% for user in users %}
+                        {% if user.role == 'udlejer' %}
+                            <option value="{{ user.id }}" {% if selected_owner_id == user.id %}selected{% endif %}>{{ user.username }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-info">
+                <p>Viser {{ properties|length }} ejendomme</p>
+                {% if selected_owner_id %}
+                    <span class="filter-badge">
+                        Udlejer: 
+                        {% for user in users %}
+                            {% if user.id == selected_owner_id %}
+                                {{ user.username }}
+                            {% endif %}
+                        {% endfor %}
+                        <a href="{{ url_for('admin_properties') }}" class="clear-filter"><i class="fas fa-times"></i></a>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Navn</th>
+                    <th>Ejer</th>
+                    <th>Adresse</th>
+                    <th>Postnummer</th>
+                    <th>By</th>
+                    <th>Handlinger</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for property in properties %}
+                <tr>
+                    <td data-label="ID">{{ property.id }}</td>
+                    <td data-label="Navn">{{ property.name }}</td>
+                    <td data-label="Ejer">
+                        {% for user in users %}
+                            {% if user.id == property.owner_id %}
+                                {{ user.username }}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td data-label="Adresse">{{ property.adresse }}</td>
+                    <td data-label="Postnummer">{{ property.postnummer }}</td>
+                    <td data-label="By">{{ property.by }}</td>
+                    <td data-label="Handlinger">
+                        <div class="action-buttons">
+                            <a href="{{ url_for('view_property', property_id=property.id) }}" class="button-lookalike action-button view-button">
+                                <i class="fas fa-eye"></i> Vis
+                            </a>
+                            <a href="{{ url_for('edit_property', property_id=property.id) }}" class="button-lookalike action-button">
+                                <i class="fas fa-edit"></i> Rediger
+                            </a>
+                            <form action="{{ url_for('delete_property', property_id=property.id) }}" method="post" style="display:inline; margin: 0;">
+                                <button type="submit" onclick="return confirm('Er du sikker på, at du vil slette denne ejendom?')" class="button-lookalike button-secondary action-button">
+                                    <i class="fas fa-trash"></i> Slet
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .admin-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .admin-section h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .top-actions {
+        margin-bottom: 1.5rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-direction: row;
+        gap: 0.2rem;
+        justify-content: flex-start;
+        width: 100%;
+    }
+    
+    .action-buttons > a,
+    .action-buttons > form {
+        flex: 1;
+    }
+    
+    .action-button {
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        padding: 0.2rem 0.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        min-width: auto;
+    }
+    
+    .action-button i {
+        margin-right: 0.3rem;
+    }
+    
+    /* Filter sektion */
+    .filter-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .filter-badge {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .clear-filter {
+        color: white;
+        text-decoration: none;
+    }
+    
+    @media (min-width: 768px) {
+        .action-button {
+            min-width: 100px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .admin-section {
+            padding: 1.5rem;
+        }
+        
+        .form-actions,
+        .action-bar {
+            flex-direction: column;
+        }
+        
+        .form-actions .button-lookalike,
+        .action-bar .button-lookalike {
+            width: 100%;
+            margin-right: 0;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-buttons > a,
+        .action-buttons > form {
+            width: 100%;
+        }
+        
+        .filter-section {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .filter-group {
+            width: 100%;
+        }
+    }
+    
+    .view-button {
+        background-color: #e3f2fd;
+        color: #0d47a1;
+    }
+    
+    .view-button:hover {
+        background-color: #bbdefb;
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // Initialiser Select2 for udlejer-filter
+        $('#owner-filter').select2({
+            placeholder: "Vælg udlejer",
+            allowClear: true
+        });
+        
+        // Lyt efter ændringer i udlejer-filter
+        $('#owner-filter').on('change', function() {
+            const ownerId = $(this).val();
+            const currentUrl = new URL(window.location.href);
+            
+            if (ownerId) {
+                currentUrl.searchParams.set('owner_id', ownerId);
+            } else {
+                currentUrl.searchParams.delete('owner_id');
+            }
+            
+            window.location.href = currentUrl.toString();
+        });
+    });
+</script>
+{% endblock %}

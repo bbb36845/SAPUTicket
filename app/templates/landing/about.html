@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}SAPUTicket - Om os{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Om SAPUTicket</h1>
+    <p class="lead">Din pålidelige partner i ejendomsadministration</p>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2>Vores historie</h2>
+                <p>SAPUTicket blev grundlagt i 2023 med visionen om at skabe en enklere og mere effektiv måde at håndtere serviceanmodninger mellem lejere, udlejere og håndværkere.</p>
+                
+                <p>Efter at have observeret de udfordringer, som mange ejendomsadministratorer står overfor med manuelle processer, papirbaserede systemer og ineffektiv kommunikation, besluttede vi at udvikle en moderne digital løsning, der kunne løse disse problemer.</p>
+                
+                <h2 class="mt-4">Vores mission</h2>
+                <p>Vores mission er at revolutionere måden, hvorpå serviceanmodninger håndteres i boligudlejning. Vi stræber efter at:</p>
+                
+                <ul>
+                    <li>Forenkle processen for alle involverede parter</li>
+                    <li>Reducere ventetider på reparationer og vedligeholdelse</li>
+                    <li>Forbedre kommunikationen mellem lejere, udlejere og håndværkere</li>
+                    <li>Skabe transparens i hele processen</li>
+                    <li>Spare tid og ressourcer gennem effektivisering</li>
+                </ul>
+                
+                <h2 class="mt-4">Vores team</h2>
+                <p>SAPUTicket er udviklet af et dedikeret team af boligeksperter, IT-specialister og designere, der alle har et fælles mål om at skabe den bedste oplevelse for vores brugere.</p>
+                
+                <p>Vores team har omfattende erfaring inden for ejendomsadministration og forstår de unikke udfordringer, som lejere, udlejere og håndværkere står overfor i deres daglige arbejde.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h3>Kontakt os</h3>
+                <p>Har du spørgsmål eller feedback? Vi vil gerne høre fra dig!</p>
+                
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-envelope mr-2 text-primary"></i> info@saputicket.dk</li>
+                    <li><i class="fas fa-phone mr-2 text-primary"></i> +45 12 34 56 78</li>
+                    <li><i class="fas fa-map-marker-alt mr-2 text-primary"></i> Hovedgaden 123, 2100 København Ø</li>
+                </ul>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('common.contact') }}" class="btn btn-primary btn-block">Send os en besked</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h3>Vores værdier</h3>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <div class="value-icon mr-3">
+                        <i class="fas fa-check-circle fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h4>Kvalitet</h4>
+                        <p class="mb-0">Vi leverer kun løsninger af højeste kvalitet</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <div class="value-icon mr-3">
+                        <i class="fas fa-shield-alt fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h4>Sikkerhed</h4>
+                        <p class="mb-0">Dine data er sikre og beskyttede hos os</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center">
+                    <div class="value-icon mr-3">
+                        <i class="fas fa-users fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h4>Fællesskab</h4>
+                        <p class="mb-0">Vi tror på samarbejde og fælles løsninger</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

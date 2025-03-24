@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}SAPUTicket - Rediger profil{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Rediger profil</h1>
+    <p class="lead">Opdater dine personlige oplysninger</p>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('common.edit_profile') }}">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Brugernavn</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="role" class="form-label">Rolle</label>
+                        <input type="text" class="form-control" id="role" value="{% if user.role == 'admin' %}Administrator{% elif user.role == 'udlejer' %}Udlejer{% elif user.role == 'lejer' %}Lejer{% elif user.role == 'craftsman' %}Håndværker{% endif %}" disabled>
+                        <small class="form-text text-muted">Din rolle kan ikke ændres. Kontakt administratoren, hvis du har brug for at ændre din rolle.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone" class="form-label">Telefonnummer</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone if user.phone }}" placeholder="Indtast dit telefonnummer">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="address" class="form-label">Adresse</label>
+                        <input type="text" class="form-control" id="address" name="address" value="{{ user.address if user.address }}" placeholder="Indtast din adresse">
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">Gem ændringer</button>
+                        <a href="{{ url_for('common.profile') }}" class="btn btn-secondary ml-2">Annuller</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

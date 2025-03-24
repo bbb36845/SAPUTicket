@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Tildel håndværker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Tildel håndværker til ticket #{{ ticket.id }}</h1>
+    
+    <div class="ticket-details">
+        <h2>Ticket detaljer</h2>
+        <div class="detail-row">
+            <div class="detail-label">Beskrivelse:</div>
+            <div class="detail-value">{{ ticket.beskrivelse }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Status:</div>
+            <div class="detail-value">{{ ticket.status }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Udlejer:</div>
+            <div class="detail-value">{{ ticket.udlejer_name }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Lejer:</div>
+            <div class="detail-value">{{ ticket.lejer }}</div>
+        </div>
+        {% if ticket.craftsman_id %}
+        <div class="detail-row">
+            <div class="detail-label">Nuværende håndværker:</div>
+            <div class="detail-value">{{ ticket.craftsman_name }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Status:</div>
+            <div class="detail-value">
+                {% if ticket.craftsman_status == 'approved' %}
+                    <span class="status-badge status-green">Godkendt</span>
+                {% else %}
+                    <span class="status-badge status-yellow">Afventer</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="assign-form-container">
+        <h2>{{ 'Skift håndværker' if ticket.craftsman_id else 'Tildel håndværker' }}</h2>
+        
+        <form method="post" action="{{ url_for('assign_craftsman', ticket_id=ticket.id) }}" class="assign-form">
+            <div class="form-group">
+                <label for="craftsman_id">Vælg håndværker:</label>
+                <select id="craftsman_id" name="craftsman_id" class="select2" required>
+                    <option value="">Vælg håndværker</option>
+                    {% for craftsman in craftsmen %}
+                        <option value="{{ craftsman.id }}" {% if ticket.craftsman_id == craftsman.id %}selected{% endif %}>
+                            {{ craftsman.username }}{% if craftsman.company_name %} ({{ craftsman.company_name }}){% endif %}{% if craftsman.speciality %} - {{ craftsman.speciality }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="requires_bid" name="requires_bid" {% if ticket.requires_bid %}checked{% endif %}>
+                    <span class="checkbox-text">Kræver tilbud</span>
+                </label>
+                <div class="form-hint">Hvis markeret, skal håndværkeren afgive et tilbud, før arbejdet kan påbegyndes.</div>
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="approve_immediately" name="approve_immediately">
+                    <span class="checkbox-text">Godkend med det samme</span>
+                </label>
+                <div class="form-hint">Hvis markeret, får håndværkeren med det samme adgang til at ændre status og kommentere på ticket'en.</div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="button-lookalike">{{ 'Opdater håndværker' if ticket.craftsman_id else 'Tildel håndværker' }}</button>
+                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="button-lookalike button-secondary">Annuller</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .ticket-details {
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .ticket-details h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    .detail-row {
+        display: flex;
+        margin-bottom: 0.75rem;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        width: 180px;
+        flex-shrink: 0;
+    }
+    
+    .detail-value {
+        flex: 1;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-green {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #065f46;
+    }
+    
+    .status-yellow {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: #92400e;
+    }
+    
+    .assign-form-container {
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .assign-form-container h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.2rem;
+    }
+    
+    .assign-form {
+        max-width: 600px;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        font-size: 1rem;
+    }
+    
+    .checkbox-group {
+        margin-top: 1rem;
+    }
+    
+    .checkbox-container {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    
+    .checkbox-container input[type="checkbox"] {
+        margin-right: 0.5rem;
+    }
+    
+    .checkbox-text {
+        font-weight: 600;
+    }
+    
+    .form-hint {
+        font-size: 0.8rem;
+        color: var(--light-text);
+        margin-top: 0.25rem;
+        margin-left: 1.5rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .detail-row {
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-actions .button-lookalike {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser Select2
+        $('.select2').select2({
+            placeholder: "Vælg håndværker",
+            allowClear: true,
+            width: '100%'
+        });
+        
+        // Håndter afhængigheder mellem checkbokse
+        const requiresBidCheckbox = document.getElementById('requires_bid');
+        const approveImmediatelyCheckbox = document.getElementById('approve_immediately');
+        
+        requiresBidCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Hvis "Kræver tilbud" er markeret, kan "Godkend med det samme" ikke være markeret
+                approveImmediatelyCheckbox.checked = false;
+                approveImmediatelyCheckbox.disabled = true;
+            } else {
+                approveImmediatelyCheckbox.disabled = false;
+            }
+        });
+        
+        approveImmediatelyCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Hvis "Godkend med det samme" er markeret, kan "Kræver tilbud" ikke være markeret
+                requiresBidCheckbox.checked = false;
+                requiresBidCheckbox.disabled = true;
+            } else {
+                requiresBidCheckbox.disabled = false;
+            }
+        });
+        
+        // Kør initial check
+        if (requiresBidCheckbox.checked) {
+            approveImmediatelyCheckbox.disabled = true;
+        }
+    });
+</script>
+{% endblock %} 

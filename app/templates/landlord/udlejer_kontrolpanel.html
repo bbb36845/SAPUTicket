@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Udlejer Kontrolpanel{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Udlejer Kontrolpanel</h1>
+    
+    <div class="action-bar top-actions">
+        <a href="{{ url_for('udlejer_dashboard') }}" class="button-lookalike button-secondary">
+            <i class="fas fa-arrow-left"></i> Tilbage til dashboard
+        </a>
+    </div>
+    
+    <!-- Ejendomme -->
+    <div class="admin-section">
+        <div class="section-header">
+            <h2>Mine Ejendomme</h2>
+            <a href="{{ url_for('udlejer_create_property') }}" class="button-lookalike button-small">
+                <i class="fas fa-plus"></i> Opret ny ejendom
+            </a>
+        </div>
+        
+        {% if properties %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Navn</th>
+                        <th>Adresse</th>
+                        <th>Antal lejemål</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for property in properties %}
+                    <tr>
+                        <td data-label="Navn">{{ property.name }}</td>
+                        <td data-label="Adresse">{{ property.adresse }}, {{ property.postnummer }} {{ property.by }}</td>
+                        <td data-label="Antal lejemål">
+                            {% set property_units = units|selectattr('property_id', 'eq', property.id)|list %}
+                            {{ property_units|length }}
+                        </td>
+                        <td data-label="Handlinger">
+                            <div class="action-buttons">
+                                <a href="{{ url_for('view_property', property_id=property.id) }}" class="button-lookalike action-button view-button">
+                                    <i class="fas fa-eye"></i> Vis
+                                </a>
+                                <a href="{{ url_for('edit_property', property_id=property.id) }}" class="button-lookalike action-button">
+                                    <i class="fas fa-edit"></i> Rediger
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty-message">Du har ingen ejendomme endnu.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Lejemål -->
+    <div class="admin-section">
+        <div class="section-header">
+            <h2>Mine Lejemål</h2>
+            <a href="{{ url_for('create_unit') }}" class="button-lookalike button-small">
+                <i class="fas fa-plus"></i> Opret nyt lejemål
+            </a>
+        </div>
+        
+        {% if units %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Adresse</th>
+                        <th>Ejendom</th>
+                        <th>Lejer</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for unit in units %}
+                    <tr>
+                        <td data-label="Adresse">{{ unit.address }}</td>
+                        <td data-label="Ejendom">{{ unit.property_name }}</td>
+                        <td data-label="Lejer">
+                            {% set unit_tenant = tenants|selectattr('unit_id', 'eq', unit.id)|first %}
+                            {% if unit_tenant %}
+                                {{ unit_tenant.username }}
+                            {% else %}
+                                <span class="empty-value">Ingen lejer</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Handlinger">
+                            <div class="action-buttons">
+                                <a href="{{ url_for('view_unit', unit_id=unit.id) }}" class="button-lookalike action-button view-button">
+                                    <i class="fas fa-eye"></i> Vis
+                                </a>
+                                <a href="{{ url_for('edit_unit', unit_id=unit.id) }}" class="button-lookalike action-button">
+                                    <i class="fas fa-edit"></i> Rediger
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty-message">Du har ingen lejemål endnu.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Lejere -->
+    <div class="admin-section">
+        <div class="section-header">
+            <h2>Mine Lejere</h2>
+            <a href="{{ url_for('create_tenant') }}" class="button-lookalike button-small">
+                <i class="fas fa-plus"></i> Opret ny lejer
+            </a>
+        </div>
+        
+        {% if tenants %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Brugernavn</th>
+                        <th>Lejemål</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tenant in tenants %}
+                    <tr>
+                        <td data-label="Brugernavn">{{ tenant.username }}</td>
+                        <td data-label="Lejemål">
+                            {% for unit in units %}
+                                {% if unit.id == tenant.unit_id %}
+                                    {{ unit.address }} ({{ unit.property_name }})
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td data-label="Handlinger">
+                            <div class="action-buttons">
+                                <a href="{{ url_for('edit_tenant', user_id=tenant.id) }}" class="button-lookalike action-button">
+                                    <i class="fas fa-edit"></i> Rediger
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty-message">Du har ingen lejere endnu.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Håndværkere -->
+    <div class="admin-section">
+        <div class="section-header">
+            <h2>Tilknyttede Håndværkere</h2>
+        </div>
+        
+        {% if craftsmen %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Brugernavn</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for craftsman in craftsmen %}
+                    <tr>
+                        <td data-label="Brugernavn">{{ craftsman.username }}</td>
+                        <td data-label="Handlinger">
+                            <div class="action-buttons">
+                                <a href="{{ url_for('admin_create_user', user_id=craftsman.id) }}" class="button-lookalike action-button">
+                                    <i class="fas fa-edit"></i> Rediger
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty-message">Du har ingen tilknyttede håndværkere endnu.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .admin-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+    }
+    
+    .section-header h2 {
+        margin: 0;
+    }
+    
+    .button-small {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .top-actions {
+        margin-bottom: 1.5rem;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1.5rem;
+    }
+    
+    th, td {
+        padding: 0.75rem;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: var(--dark-text);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .action-button {
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .action-button i {
+        margin-right: 0.5rem;
+    }
+    
+    .view-button {
+        background-color: var(--info-color, #17a2b8);
+        color: white;
+    }
+    
+    .view-button:hover {
+        background-color: var(--info-color-dark, #138496);
+    }
+    
+    .empty-message {
+        color: var(--light-text);
+        font-style: italic;
+    }
+    
+    .empty-value {
+        color: var(--light-text);
+        font-style: italic;
+    }
+    
+    @media (max-width: 768px) {
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .button-small {
+            width: 100%;
+        }
+        
+        .action-bar {
+            flex-direction: column;
+        }
+        
+        .action-bar .button-lookalike {
+            width: 100%;
+        }
+        
+        .admin-section {
+            padding: 1.5rem;
+        }
+        
+        table {
+            display: block;
+        }
+        
+        table thead {
+            display: none;
+        }
+        
+        table tbody tr {
+            display: block;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+        }
+        
+        table td {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        table td:last-child {
+            border-bottom: none;
+        }
+        
+        table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            text-align: left;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %} 

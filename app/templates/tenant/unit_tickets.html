@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Service Requests for {{ unit.address }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Breadcrumb navigation -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('tenant.dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('tenant.units') }}">Mine boliger</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ unit.address }}</li>
+        </ol>
+    </nav>
+
+    <!-- Unit details and header -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">{{ unit.address }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Ejendom:</strong> {{ unit.property.name }}</p>
+                    <p><strong>Adresse:</strong> {{ unit.address }}</p>
+                    {% if unit.floor %}<p><strong>Etage:</strong> {{ unit.floor }}</p>{% endif %}
+                    {% if unit.size %}<p><strong>Størrelse:</strong> {{ unit.size }} m²</p>{% endif %}
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{{ url_for('tenant.ticket_create', unit_id=unit.id) }}" class="btn btn-success">
+                        <i class="fas fa-plus-circle"></i> Opret ny service anmodning
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics for this unit -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card h-100 bg-light">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Totale anmodninger</h5>
+                    <p class="display-4">{{ stats.total }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card h-100 bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Åbne anmodninger</h5>
+                    <p class="display-4">{{ stats.open }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card h-100 bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Igangværende</h5>
+                    <p class="display-4">{{ stats.in_progress }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card h-100 bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Afsluttede</h5>
+                    <p class="display-4">{{ stats.completed }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter options -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="mb-0">Filtrer anmodninger</h3>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">Alle</option>
+                        <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>Åbne</option>
+                        <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>Igangværende</option>
+                        <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Afsluttede</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="sort" class="form-label">Sortering</label>
+                    <select name="sort" id="sort" class="form-select">
+                        <option value="created_desc" {% if request.args.get('sort') == 'created_desc' %}selected{% endif %}>Nyeste først</option>
+                        <option value="created_asc" {% if request.args.get('sort') == 'created_asc' %}selected{% endif %}>Ældste først</option>
+                        <option value="updated_desc" {% if request.args.get('sort') == 'updated_desc' %}selected{% endif %}>Senest opdateret</option>
+                    </select>
+                </div>
+                <div class="col-md-4 align-self-end mb-3">
+                    <button type="submit" class="btn btn-primary w-100">Anvend filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tickets list -->
+    {% if tickets %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">Service anmodninger</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Problem</th>
+                        <th>Status</th>
+                        <th>Prioritet</th>
+                        <th>Oprettet</th>
+                        <th>Sidst opdateret</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td>#{{ ticket.id }}</td>
+                        <td>{{ ticket.title }}</td>
+                        <td>
+                            {% if ticket.status == 'open' %}
+                                <span class="badge bg-warning text-dark">Åben</span>
+                            {% elif ticket.status == 'in_progress' %}
+                                <span class="badge bg-info">Igangværende</span>
+                            {% elif ticket.status == 'on_hold' %}
+                                <span class="badge bg-secondary">På hold</span>
+                            {% elif ticket.status == 'completed' %}
+                                <span class="badge bg-success">Afsluttet</span>
+                            {% elif ticket.status == 'cancelled' %}
+                                <span class="badge bg-danger">Annulleret</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">{{ ticket.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ticket.priority == 'high' %}
+                                <span class="badge bg-danger">Høj</span>
+                            {% elif ticket.priority == 'medium' %}
+                                <span class="badge bg-warning text-dark">Medium</span>
+                            {% elif ticket.priority == 'low' %}
+                                <span class="badge bg-info">Lav</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">{{ ticket.priority }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ ticket.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ ticket.updated_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('tenant.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> Se
+                                </a>
+                                {% if ticket.status in ['open', 'on_hold'] %}
+                                <a href="{{ url_for('tenant.ticket_edit', ticket_id=ticket.id) }}" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-edit"></i> Rediger
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i> Du har ikke oprettet nogen service anmodninger for denne bolig endnu. Klik på "Opret ny service anmodning" knappen ovenfor for at komme i gang.
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

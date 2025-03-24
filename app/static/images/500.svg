@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400px" height="300px" viewBox="0 0 400 300" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f8fafc" rx="10" ry="10"/>
+  
+  <!-- 500 Text -->
+  <text x="200" y="140" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#e74c3c" text-anchor="middle">500</text>
+  
+  <!-- Server with flashing lights -->
+  <rect x="130" y="200" width="140" height="70" fill="#475569" rx="5" ry="5"/>
+  <rect x="140" y="210" width="120" height="50" fill="#1e293b" rx="3" ry="3"/>
+  
+  <!-- Server lights -->
+  <circle cx="155" cy="220" r="5" fill="#2ecc71">
+    <animate attributeName="fill" values="#2ecc71;#1e293b;#2ecc71" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="175" cy="220" r="5" fill="#e74c3c">
+    <animate attributeName="fill" values="#e74c3c;#1e293b;#e74c3c" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="195" cy="220" r="5" fill="#f1c40f">
+    <animate attributeName="fill" values="#f1c40f;#1e293b;#f1c40f" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Server slots -->
+  <rect x="150" y="235" width="100" height="5" fill="#475569" rx="1" ry="1"/>
+  <rect x="150" y="245" width="100" height="5" fill="#475569" rx="1" ry="1"/>
+  
+  <!-- Lightning bolt -->
+  <path d="M300,80 L280,130 L300,130 L270,190" stroke="#f1c40f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/>
+  </path>
+  
+  <!-- Cogwheel -->
+  <circle cx="90" cy="100" r="30" fill="none" stroke="#3498db" stroke-width="5"/>
+  <circle cx="90" cy="100" r="15" fill="none" stroke="#3498db" stroke-width="5"/>
+  <path d="M90,70 L90,60 M90,130 L90,140 M120,100 L130,100 M50,100 L60,100 M113,77 L120,70 M60,130 L67,123 M113,123 L120,130 M60,70 L67,77" stroke="#3498db" stroke-width="5" stroke-linecap="round">
+    <animateTransform attributeName="transform" type="rotate" from="0 90 100" to="360 90 100" dur="10s" repeatCount="indefinite"/>
+  </path>
+</svg> 

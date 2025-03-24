@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Standardsidetitel{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #32627f;
+            --primary-hover: #264c61;
+            --primary-light: #a8c5d3;
+            --secondary-color: #f3f4f6;
+            --secondary-hover: #e5e7eb;
+            --text-color: #1f2937;
+            --light-text: #6b7280;
+            --border-color: #e5e7eb;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+            --container-width: 1100px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 0.5rem;
+            --button-text: #ffffff;
+        }
+
+        /* Generel styling */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f9fafb;
+            padding: 0;
+            margin: 0;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--text-color);
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: var(--primary-hover);
+        }
+
+        .container {
+            max-width: var(--container-width);
+            margin: 2rem auto;
+            background: #fff;
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        /* Header og navigation */
+        .header {
+            background-color: white;
+            box-shadow: var(--shadow-sm);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .header-container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0.5rem 0;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-right: 1rem;
+            font-weight: 500;
+            color: var(--light-text);
+        }
+
+        .user-info i {
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        /* Formular styling */
+        form {
+            margin-bottom: 2rem;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        form input[type="text"],
+        form input[type="number"],
+        form input[type="password"],
+        form select,
+        form textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        form input[type="text"]:focus,
+        form input[type="number"]:focus,
+        form input[type="password"]:focus,
+        form select:focus,
+        form textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Knap styling */
+        form button[type="submit"],
+        .button-lookalike,
+        form input[type="submit"] {
+            background-color: var(--primary-color);
+            color: var(--button-text);
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        form button[type="submit"]:hover,
+        .button-lookalike:hover,
+        form input[type="submit"]:hover {
+            background-color: var(--primary-hover);
+            color: var(--button-text);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        form button[type="submit"]:active,
+        .button-lookalike:active,
+        form input[type="submit"]:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Sekundær knap styling */
+        .button-secondary {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        .button-secondary:hover {
+            background-color: var(--secondary-hover);
+            color: var(--text-color);
+        }
+
+        /* Tabel styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--secondary-color);
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: rgba(243, 244, 246, 0.5);
+        }
+
+        td a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        td a:hover {
+            text-decoration: underline;
+        }
+
+        /* Flash beskeder */
+        .flashes {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .flashes li {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: var(--radius);
+            font-weight: 500;
+        }
+
+        .flashes .success {
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+
+        .flashes .error {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--error-color);
+        }
+
+        /* Styling af navigationsmenuen */
+        .admin-nav {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .admin-nav h2 {
+            margin-top: 0;
+            text-align: center;
+            border-bottom: none;
+            margin-bottom: 1rem;
+        }
+
+        .admin-nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .admin-nav ul li {
+            display: inline-block;
+        }
+
+        .admin-nav .button-lookalike {
+            margin-bottom: 0;
+        }
+
+        /* Select2 styling */
+        .select2-container .select2-selection--single {
+            height: 42px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 0.5rem;
+            font-size: 1rem;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 1.5;
+            color: var(--text-color);
+            padding-left: 0.5rem;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px;
+        }
+
+        .select2-dropdown {
+            font-size: 1rem;
+            font-family: inherit;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        /* Forbedret hover-effekt for dropdown-elementer */
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--primary-light);
+            color: var(--text-color);
+        }
+
+        /* Valgt element i dropdown */
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .select2-search--dropdown .select2-search__field {
+            font-size: 1rem;
+            font-family: inherit;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: calc(var(--radius) / 2);
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+        
+        .status-oprettet {
+            background-color: #3498db;
+        }
+        
+        .status-igangsat {
+            background-color: #f39c12;
+        }
+        
+        .status-afventer {
+            background-color: #e74c3c;
+        }
+        
+        .status-afsluttet {
+            background-color: #2ecc71;
+        }
+        
+        .status-lukket {
+            background-color: #2ecc71;
+        }
+        
+        .status-other {
+            background-color: #9b59b6;
+        }
+        
+        /* Fallback for andre status-typer */
+        [class^="status-"]:not(.status-oprettet):not(.status-igangsat):not(.status-afventer):not(.status-afsluttet):not(.status-lukket):not(.status-other) {
+            background-color: #9b59b6;
+        }
+        
+        /* Action buttons styling */
+        .view-button {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+        }
+        
+        .view-button:hover {
+            background-color: #bbdefb;
+        }
+        
+        .edit-button {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .edit-button:hover {
+            background-color: #c8e6c9;
+        }
+        
+        .delete-button {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        .delete-button:hover {
+            background-color: #ffcdd2;
+        }
+        
+        .inline-form {
+            display: inline;
+        }
+
+        /* Handlingsknapper i tabeller */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .button-lookalike {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        /* Responsivt design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+
+            .header-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .nav-links {
+                margin-top: 1rem;
+                justify-content: center;
+            }
+
+            .user-info {
+                margin-bottom: 0.5rem;
+                margin-right: 0;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            table thead {
+                display: none;
+            }
+
+            table tbody tr {
+                display: block;
+                margin-bottom: 1rem;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius);
+            }
+
+            table td {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.75rem;
+                text-align: right;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            table td:last-child {
+                border-bottom: none;
+            }
+
+            table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                text-align: left;
+            }
+
+            .admin-nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .admin-nav ul li {
+                margin: 0.25rem 0;
+                width: 100%;
+                text-align: center;
+            }
+
+            .admin-nav .button-lookalike {
+                width: 100%;
+                margin-right: 0;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .action-buttons .button-lookalike {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            form button[type="submit"],
+            .button-lookalike,
+            form input[type="submit"] {
+                width: 100%;
+                margin-right: 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            h2 {
+                font-size: 1.25rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+    {# Placer script-tags EFTER style-tagget, og FØR body-tagget #}
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-container">
+            <div class="logo">SAPU Ticket</div>
+            <div class="nav-links">
+                {% if flask_login.current_user.is_authenticated %}
+                    <div class="user-info">
+                        <i class="fas fa-user"></i> Logget ind som: {{ flask_login.current_user.username }}
+                    </div>
+                    <a href="{{ url_for('index') }}" class="button-lookalike">
+                        <i class="fas fa-home"></i> Hjem
+                    </a>
+                    {% if flask_login.current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin') }}" class="button-lookalike">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                    {% endif %}
+                    {% if flask_login.current_user.role == 'udlejer' %}
+                        <a href="{{ url_for('udlejer_dashboard') }}" class="button-lookalike">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    {% endif %}
+                    {% if flask_login.current_user.role == 'craftsman' %}
+                        <a href="{{ url_for('craftsman_dashboard') }}" class="button-lookalike">
+                            <i class="fas fa-tools"></i> Håndværker Dashboard
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="button-lookalike">
+                        <i class="fas fa-sign-out-alt"></i> Log ud
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="button-lookalike">
+                        <i class="fas fa-sign-in-alt"></i> Log ind
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container">
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <script>
+        $(document).ready(function() {
+            // Funktion til at initialisere Select2 (kaldes kun, når det er relevant)
+            function initializeSelect2() {
+                $('#unit_id').select2({
+                    placeholder: "Vælg et lejemål",
+                    allowClear: true
+                });
+            }
+        
+            // Funktion til at vise/skjule lejemål dropdown
+            function toggleUnitSelection() {
+                if ($('#role').val() == 'lejer') {
+                    $('#unit-selection').show();
+                    initializeSelect2(); // Initialiser Select2, når feltet vises
+                } else {
+                    $('#unit-selection').hide();
+                    $('#unit_id').val(null).trigger('change'); // Nulstil Select2
+                }
+            }
+        
+            // Lyt efter ændringer i rolle-dropdown
+            $('#role').change(toggleUnitSelection);
+        
+            // Initial visning ved indlæsning af siden
+            toggleUnitSelection();
+
+            // Initialiser alle Select2 elementer
+            $('.select2').select2({
+                placeholder: "Vælg",
+                allowClear: true
+            });
+        });
+        </script>
+</body>
+</html>

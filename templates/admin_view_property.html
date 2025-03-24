@@ -1,0 +1,650 @@
+{% extends "base.html" %}
+
+{% block title %}Vis Ejendom: {{ property.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Ejendom: {{ property.name }}</h1>
+    
+    <div class="action-bar top-actions">
+        <a href="{{ url_for('admin_properties') }}" class="button-lookalike button-secondary">
+            <i class="fas fa-arrow-left"></i> Tilbage til ejendomme
+        </a>
+        <a href="{{ url_for('edit_property', property_id=property.id) }}" class="button-lookalike">
+            <i class="fas fa-edit"></i> Rediger ejendom
+        </a>
+        <a href="{{ url_for('admin_create_unit') }}?property_id={{ property.id }}" class="button-lookalike">
+            <i class="fas fa-plus"></i> Tilføj lejemål
+        </a>
+    </div>
+    
+    <!-- Ejendomsoplysninger -->
+    <div class="admin-section">
+        <h2>Ejendomsoplysninger</h2>
+        <div class="property-details">
+            <div class="detail-group">
+                <div class="detail-label">Ejendomsnavn:</div>
+                <div class="detail-value">{{ property.name }}</div>
+            </div>
+            <div class="detail-group">
+                <div class="detail-label">Adresse:</div>
+                <div class="detail-value">{{ property.adresse }}, {{ property.postnummer }} {{ property.by }}</div>
+            </div>
+            <div class="detail-group">
+                <div class="detail-label">Udlejer:</div>
+                <div class="detail-value">{{ owner.username }}</div>
+            </div>
+            <div class="detail-group">
+                <div class="detail-label">Antal lejemål:</div>
+                <div class="detail-value">{{ units|length }}</div>
+            </div>
+            <div class="detail-group">
+                <div class="detail-label">Antal aktive tickets:</div>
+                <div class="detail-value">{{ tickets|selectattr('status', 'ne', 'lukket')|list|length }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lejemål -->
+    <div class="admin-section">
+        <h2>Lejemål i ejendommen</h2>
+        {% if units %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Adresse</th>
+                        <th>Lejer</th>
+                        <th>Aktive tickets</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for unit in units %}
+                    <tr>
+                        <td data-label="ID">{{ unit.id }}</td>
+                        <td data-label="Adresse">{{ unit.address }}</td>
+                        <td data-label="Lejer">
+                            {% for tenant in tenants %}
+                                {% if tenant.id == unit.tenant_id %}
+                                    {{ tenant.username }}
+                                {% endif %}
+                            {% endfor %}
+                            {% if not unit.tenant_id %}
+                                <span class="empty-value">Ingen lejer</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Aktive tickets">
+                            {% set active_tickets = tickets|selectattr('unit_id', 'eq', unit.id)|selectattr('status', 'ne', 'lukket')|list %}
+                            {{ active_tickets|length }}
+                            {% if active_tickets|length > 0 %}
+                                <a href="#tickets-section" class="ticket-link" data-unit-id="{{ unit.id }}">
+                                    <i class="fas fa-eye"></i> Vis
+                                </a>
+                                {% if active_tickets|length == 1 %}
+                                    <a href="{{ url_for('ticket_detail', ticket_id=active_tickets[0].id) }}" class="ticket-link direct-link">
+                                        <i class="fas fa-external-link-alt"></i> Gå til
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td data-label="Handlinger">
+                            <div class="action-buttons">
+                                <a href="{{ url_for('edit_unit', unit_id=unit.id) }}" class="button-lookalike action-button">
+                                    <i class="fas fa-edit"></i> Rediger
+                                </a>
+                                <form action="{{ url_for('delete_unit', unit_id=unit.id) }}" method="post" class="action-form">
+                                    <button type="submit" onclick="return confirm('Er du sikker på, at du vil slette dette lejemål?')" class="button-lookalike button-secondary action-button">
+                                        <i class="fas fa-trash"></i> Slet
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-message">Der er ingen lejemål i denne ejendom.</p>
+            <a href="{{ url_for('admin_create_unit') }}?property_id={{ property.id }}" class="button-lookalike">
+                <i class="fas fa-plus"></i> Opret første lejemål
+            </a>
+        {% endif %}
+    </div>
+    
+    <!-- Tickets -->
+    <div class="admin-section" id="tickets-section">
+        <h2>Tickets for ejendommen</h2>
+        {% if tickets %}
+            <div class="filter-buttons">
+                <button class="filter-button active" data-filter="all">Alle tickets</button>
+                <button class="filter-button" data-filter="active">Kun aktive</button>
+                <button class="filter-button" data-filter="closed">Kun lukkede</button>
+            </div>
+            <table id="tickets-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Lejemål</th>
+                        <th>Beskrivelse</th>
+                        <th>Status</th>
+                        <th>Oprettet af</th>
+                        <th>Dato</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr data-unit-id="{{ ticket.unit_id }}">
+                        <td data-label="ID">{{ ticket.id }}</td>
+                        <td data-label="Lejemål" data-unit-id="{{ ticket.unit_id }}">{{ ticket.unit_address or 'Ukendt' }}</td>
+                        <td data-label="Beskrivelse" class="description-cell">
+                            <div class="description-short">
+                                {% if ticket.beskrivelse %}
+                                    {{ ticket.beskrivelse[:50] }}{% if ticket.beskrivelse|length > 50 %}...{% endif %}
+                                {% else %}
+                                    Ingen beskrivelse
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td data-label="Status">
+                            <span class="status-badge status-{{ ticket.status|lower|replace(' ', '-') }}">{{ ticket.status }}</span>
+                        </td>
+                        <td data-label="Oprettet af">{{ ticket.creator_name or 'Ukendt' }}</td>
+                        <td data-label="Dato">
+                            <div class="date-display">
+                                <div class="date-day">{{ ticket.created_at.split(' ')[0] if ticket.created_at else 'Ukendt' }}</div>
+                            </div>
+                        </td>
+                        <td data-label="Handlinger">
+                            <div class="action-buttons">
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="button-lookalike action-button view-button">
+                                    <i class="fas fa-eye"></i> Vis
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-message">Der er ingen tickets for denne ejendom.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .admin-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .admin-section h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .top-actions {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Ejendomsdetaljer */
+    .property-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .detail-group {
+        margin-bottom: 1rem;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: var(--light-text);
+        margin-bottom: 0.3rem;
+        font-size: 0.9rem;
+    }
+    
+    .detail-value {
+        font-size: 1.1rem;
+    }
+    
+    /* Tabel styling */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1.5rem;
+    }
+    
+    th, td {
+        padding: 0.75rem;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: var(--dark-text);
+    }
+    
+    /* Action buttons */
+    .action-buttons {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .action-buttons > a,
+    .action-buttons > form {
+        flex: 1;
+    }
+    
+    .action-button {
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .action-button i {
+        margin-right: 0.5rem;
+    }
+    
+    .view-button {
+        background-color: #e3f2fd;
+        color: #0d47a1;
+    }
+    
+    .view-button:hover {
+        background-color: #bbdefb;
+    }
+    
+    /* Status badges */
+    .status-badge {
+        display: inline-block;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: center;
+    }
+    
+    .status-ny {
+        background-color: #e3f2fd;
+        color: #0d47a1;
+    }
+    
+    .status-åben {
+        background-color: #e8f5e9;
+        color: #1b5e20;
+    }
+    
+    .status-i-gang {
+        background-color: #fff8e1;
+        color: #ff6f00;
+    }
+    
+    .status-afventer {
+        background-color: #f3e5f5;
+        color: #6a1b9a;
+    }
+    
+    .status-lukket {
+        background-color: #eeeeee;
+        color: #424242;
+    }
+    
+    /* Beskrivelse celle */
+    .description-cell {
+        max-width: 300px;
+    }
+    
+    .description-short {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Dato display */
+    .date-display {
+        font-size: 0.9rem;
+    }
+    
+    /* Empty states */
+    .empty-message {
+        color: var(--light-text);
+        font-style: italic;
+        margin-bottom: 1.5rem;
+    }
+    
+    .empty-value {
+        color: var(--light-text);
+        font-style: italic;
+    }
+    
+    @media (max-width: 768px) {
+        .admin-section {
+            padding: 1.5rem;
+        }
+        
+        .property-details {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-bar {
+            flex-direction: column;
+        }
+        
+        .action-bar .button-lookalike {
+            width: 100%;
+            margin-right: 0;
+        }
+        
+        table {
+            display: block;
+            overflow-x: auto;
+        }
+        
+        table thead {
+            display: none;
+        }
+        
+        table tbody tr {
+            display: block;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+        }
+        
+        table td {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        table td:last-child {
+            border-bottom: none;
+        }
+        
+        table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            text-align: left;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-buttons > a,
+        .action-buttons > form {
+            width: 100%;
+        }
+    }
+    
+    /* Tickets */
+    .admin-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .admin-section h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .top-actions {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Ejendomsdetaljer */
+    .property-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .detail-group {
+        margin-bottom: 1rem;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: var(--light-text);
+        margin-bottom: 0.3rem;
+        font-size: 0.9rem;
+    }
+    
+    .detail-value {
+        font-size: 1.1rem;
+    }
+    
+    /* Tabel styling */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1.5rem;
+    }
+    
+    th, td {
+        padding: 0.75rem;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: var(--dark-text);
+    }
+    
+    /* Action buttons */
+    .action-buttons {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .action-buttons > a,
+    .action-buttons > form {
+        flex: 1;
+    }
+    
+    .action-form {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .action-button {
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Ticket link styling */
+    .ticket-link {
+        display: inline-block;
+        margin-left: 0.5rem;
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+    
+    .ticket-link:hover {
+        text-decoration: underline;
+    }
+    
+    .direct-link {
+        color: #4caf50;
+    }
+    
+    .direct-link:hover {
+        color: #388e3c;
+    }
+    
+    /* Highlighted row */
+    .highlighted-row {
+        background-color: rgba(var(--primary-rgb), 0.2) !important;
+        transition: background-color 0.3s ease;
+        box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.4);
+        position: relative;
+    }
+    
+    .highlighted-row::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background-color: var(--primary);
+    }
+    
+    /* Filter buttons */
+    .filter-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-button {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border-color);
+        background-color: #f8f9fa;
+        border-radius: var(--radius);
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        display: inline-block;
+    }
+    
+    .filter-button:hover {
+        background-color: #e9ecef;
+    }
+    
+    .filter-button.active {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tilføj event listeners til alle ticket-links
+        var ticketLinks = document.querySelectorAll('.ticket-link');
+        
+        ticketLinks.forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                var unitId = this.getAttribute('data-unit-id');
+                highlightTickets(unitId);
+            });
+        });
+        
+        // Tilføj event listeners til filter-knapper
+        var filterButtons = document.querySelectorAll('.filter-button');
+        
+        filterButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                // Fjern active class fra alle knapper
+                filterButtons.forEach(function(btn) {
+                    btn.classList.remove('active');
+                });
+                
+                // Tilføj active class til den klikkede knap
+                this.classList.add('active');
+                
+                // Filtrer tickets baseret på knappens data-filter attribut
+                var filter = this.getAttribute('data-filter');
+                filterTickets(filter);
+            });
+        });
+    });
+
+    function highlightTickets(unitId) {
+        // Fjern tidligere highlighting
+        document.querySelectorAll('tr.highlighted-row').forEach(function(row) {
+            row.classList.remove('highlighted-row');
+        });
+        
+        // Highlight tickets for det valgte lejemål
+        var rows = document.querySelectorAll('#tickets-table tbody tr[data-unit-id="' + unitId + '"]');
+        
+        if (rows.length > 0) {
+            rows.forEach(function(row) {
+                row.classList.add('highlighted-row');
+                
+                // Scroll til den første highlightede række
+                if (!window.highlightedFirst) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    window.highlightedFirst = true;
+                }
+            });
+        }
+        
+        // Nulstil flag efter kort tid
+        setTimeout(function() {
+            window.highlightedFirst = false;
+        }, 100);
+    }
+    
+    function filterTickets(filter) {
+        var rows = document.querySelectorAll('#tickets-table tbody tr');
+        
+        rows.forEach(function(row) {
+            var statusCell = row.querySelector('td[data-label="Status"] .status-badge');
+            var status = statusCell ? statusCell.textContent.trim().toLowerCase() : '';
+            
+            if (filter === 'all') {
+                row.style.display = '';
+            } else if (filter === 'active' && status !== 'lukket') {
+                row.style.display = '';
+            } else if (filter === 'closed' && status === 'lukket') {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %} 

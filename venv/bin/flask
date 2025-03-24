@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/Volumes/SSD980 2TB/Google Drive/Kodning/SAPUTicket/venv/bin/python3" "$0" "$@"
+'''exec' "/Volumes/SSD980 2TB/Google Drive/Kodning/SAPUTicket/venv/bin/python3.13" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re

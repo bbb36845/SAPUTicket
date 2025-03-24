@@ -1,0 +1,526 @@
+{% extends "base.html" %}
+
+{% block title %}Håndværker Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Håndværker Dashboard</h1>
+    
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.assigned_count }}</div>
+            <div class="stat-label">Tildelte tickets</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.approved_count }}</div>
+            <div class="stat-label">Godkendte (grøn status)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.pending_count }}</div>
+            <div class="stat-label">Afventende (gul status)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.bid_count }}</div>
+            <div class="stat-label">Afgivne tilbud</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.completed_count }}</div>
+            <div class="stat-label">Afsluttede opgaver</div>
+        </div>
+    </div>
+
+    <div class="dashboard-section">
+        <h2>Tildelte tickets</h2>
+        {% if assigned_tickets %}
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Status</th>
+                        <th>Adresse</th>
+                        <th>Beskrivelse</th>
+                        <th>Dato</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in assigned_tickets %}
+                    <tr class="ticket-row {% if ticket.status_color == 'grøn' %}status-green{% else %}status-yellow{% endif %}">
+                        <td data-label="Ticket" class="ticket-main-cell">
+                            <div class="ticket-main-info">
+                                <div class="ticket-id-and-parties">
+                                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="ticket-link">#{{ ticket.id }}</a>
+                                    <span class="ticket-party"><i class="fas fa-user-tie"></i> {{ ticket.udlejer_name }}</span>
+                                    <span class="ticket-party"><i class="fas fa-user"></i> {{ ticket.lejer_name }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Status">
+                            <span class="status-badge {% if ticket.status_color == 'grøn' %}status-green{% else %}status-yellow{% endif %}">
+                                {{ ticket.status }} 
+                                <span class="status-indicator"></span>
+                            </span>
+                        </td>
+                        <td data-label="Adresse">
+                            {{ ticket.unit_address }}
+                            {% if ticket.property_name %}
+                                <div class="property-name">({{ ticket.property_name }})</div>
+                            {% endif %}
+                        </td>
+                        <td data-label="Beskrivelse" class="description-cell">
+                            <div class="description-container">
+                                <div class="description-short">
+                                    {{ ticket.beskrivelse[:70] }}{% if ticket.beskrivelse|length > 70 %}...{% endif %}
+                                </div>
+                                {% if ticket.beskrivelse|length > 70 %}
+                                    <div class="description-full" style="display: none;">
+                                        {{ ticket.beskrivelse }}
+                                    </div>
+                                    <button class="toggle-description" data-action="expand">
+                                        <i class="fas fa-chevron-down"></i> Vis mere
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td data-label="Dato" class="date-cell">
+                            <div class="ticket-date">
+                                <div class="ticket-created">
+                                    <i class="fas fa-calendar-plus"></i> 
+                                    {% if ticket.created_at %}
+                                        {{ ticket.created_at.split(' ')[0] }}
+                                    {% else %}
+                                        Ukendt dato
+                                    {% endif %}
+                                </div>
+                                <div class="ticket-time">
+                                    <i class="fas fa-clock"></i> 
+                                    {% if ticket.created_at %}
+                                        {{ ticket.created_at.split(' ')[1].split('.')[0] }}
+                                    {% else %}
+                                        Ukendt tid
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Handlinger">
+                            <div class="action-buttons">
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="button-lookalike action-button view-button">
+                                    <i class="fas fa-eye"></i> Vis
+                                </a>
+                                {% if ticket.status_color == 'grøn' %}
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}#update-status" class="button-lookalike action-button">
+                                    <i class="fas fa-edit"></i> Opdater status
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="no-data-message">Du har ingen tildelte tickets på nuværende tidspunkt.</p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-section">
+        <h2>Afgivne tilbud</h2>
+        {% if bid_tickets %}
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Tilbud</th>
+                        <th>Status</th>
+                        <th>Adresse</th>
+                        <th>Beskrivelse</th>
+                        <th>Handlinger</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in bid_tickets %}
+                    <tr>
+                        <td data-label="Ticket" class="ticket-main-cell">
+                            <div class="ticket-main-info">
+                                <div class="ticket-id-and-parties">
+                                    <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="ticket-link">#{{ ticket.id }}</a>
+                                    <span class="ticket-party"><i class="fas fa-user-tie"></i> {{ ticket.udlejer_name }}</span>
+                                    <span class="ticket-party"><i class="fas fa-user"></i> {{ ticket.lejer_name }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Tilbud">
+                            <div class="bid-amount">{{ ticket.bid_amount }} kr.</div>
+                        </td>
+                        <td data-label="Status">
+                            <span class="bid-status bid-status-{{ ticket.bid_status }}">
+                                {% if ticket.bid_status == 'pending' %}
+                                    Afventer
+                                {% elif ticket.bid_status == 'accepted' %}
+                                    Accepteret
+                                {% elif ticket.bid_status == 'rejected' %}
+                                    Afvist
+                                {% else %}
+                                    {{ ticket.bid_status }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td data-label="Adresse">
+                            {{ ticket.unit_address }}
+                            {% if ticket.property_name %}
+                                <div class="property-name">({{ ticket.property_name }})</div>
+                            {% endif %}
+                        </td>
+                        <td data-label="Beskrivelse" class="description-cell">
+                            <div class="description-container">
+                                <div class="description-short">
+                                    {{ ticket.beskrivelse[:70] }}{% if ticket.beskrivelse|length > 70 %}...{% endif %}
+                                </div>
+                                {% if ticket.beskrivelse|length > 70 %}
+                                    <div class="description-full" style="display: none;">
+                                        {{ ticket.beskrivelse }}
+                                    </div>
+                                    <button class="toggle-description" data-action="expand">
+                                        <i class="fas fa-chevron-down"></i> Vis mere
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td data-label="Handlinger">
+                            <div class="action-buttons">
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="button-lookalike action-button view-button">
+                                    <i class="fas fa-eye"></i> Vis
+                                </a>
+                                {% if ticket.bid_status == 'pending' %}
+                                <a href="{{ url_for('edit_bid', bid_id=ticket.bid_id) }}" class="button-lookalike action-button">
+                                    <i class="fas fa-edit"></i> Rediger tilbud
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="no-data-message">Du har ingen afgivne tilbud på nuværende tidspunkt.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .dashboard-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        flex: 1;
+        min-width: 150px;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--light-text);
+    }
+    
+    .dashboard-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .dashboard-section h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .dashboard-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .dashboard-table th {
+        background-color: #f9fafb;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--light-text);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+    
+    .dashboard-table td {
+        padding: 1rem 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+    
+    .dashboard-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .ticket-row {
+        position: relative;
+    }
+    
+    .ticket-row.status-green {
+        background-color: rgba(16, 185, 129, 0.05);
+    }
+    
+    .ticket-row.status-yellow {
+        background-color: rgba(245, 158, 11, 0.05);
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-green {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #065f46;
+    }
+    
+    .status-yellow {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: #92400e;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-left: 0.5rem;
+    }
+    
+    .status-green .status-indicator {
+        background-color: #10b981;
+    }
+    
+    .status-yellow .status-indicator {
+        background-color: #f59e0b;
+    }
+    
+    .bid-amount {
+        font-weight: 600;
+        color: #0f766e;
+    }
+    
+    .bid-status {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .bid-status-pending {
+        background-color: rgba(59, 130, 246, 0.1);
+        color: #1e40af;
+    }
+    
+    .bid-status-accepted {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #065f46;
+    }
+    
+    .bid-status-rejected {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: #991b1b;
+    }
+    
+    .property-name {
+        font-size: 0.8rem;
+        color: var(--light-text);
+        margin-top: 0.25rem;
+    }
+    
+    .no-data-message {
+        color: var(--light-text);
+        font-style: italic;
+        text-align: center;
+        padding: 2rem 0;
+    }
+    
+    .description-container {
+        position: relative;
+        max-width: 300px;
+    }
+    
+    .description-short {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+        line-height: 1.2;
+    }
+    
+    .description-full {
+        white-space: pre-line;
+        margin-bottom: 0.3rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .toggle-description {
+        background: none;
+        border: none;
+        color: var(--primary-color);
+        cursor: pointer;
+        padding: 0.1rem 0;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        margin-top: 0.3rem;
+    }
+    
+    .toggle-description i {
+        margin-right: 0.25rem;
+        transition: transform 0.2s ease;
+    }
+    
+    .toggle-description[data-action="collapse"] i {
+        transform: rotate(180deg);
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .action-button {
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        padding: 0.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+    
+    .action-button i {
+        margin-right: 0.3rem;
+    }
+    
+    .view-button {
+        background-color: #e3f2fd;
+        color: #0d47a1;
+    }
+    
+    .view-button:hover {
+        background-color: #bbdefb;
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-stats {
+            flex-direction: column;
+        }
+        
+        .stat-card {
+            width: 100%;
+        }
+        
+        .dashboard-table {
+            display: block;
+        }
+        
+        .dashboard-table thead {
+            display: none;
+        }
+        
+        .dashboard-table tbody {
+            display: block;
+        }
+        
+        .dashboard-table tr {
+            display: block;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1rem;
+        }
+        
+        .dashboard-table td {
+            display: block;
+            text-align: right;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .dashboard-table td:last-child {
+            border-bottom: none;
+        }
+        
+        .dashboard-table td::before {
+            content: attr(data-label);
+            float: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+        }
+        
+        .action-buttons {
+            flex-direction: row;
+            justify-content: flex-end;
+        }
+        
+        .action-button {
+            width: auto;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tilføj event listeners til alle "Vis mere"/"Vis mindre" knapper
+        document.querySelectorAll('.toggle-description').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation(); // Forhindrer at klikket bobler op
+                const container = this.closest('.description-container');
+                const shortDesc = container.querySelector('.description-short');
+                const fullDesc = container.querySelector('.description-full');
+                
+                if (this.getAttribute('data-action') === 'expand') {
+                    // Udvid beskrivelsen
+                    shortDesc.style.display = 'none';
+                    fullDesc.style.display = 'block';
+                    this.innerHTML = '<i class="fas fa-chevron-up"></i> Vis mindre';
+                    this.setAttribute('data-action', 'collapse');
+                } else {
+                    // Skjul beskrivelsen
+                    shortDesc.style.display = 'block';
+                    fullDesc.style.display = 'none';
+                    this.innerHTML = '<i class="fas fa-chevron-down"></i> Vis mere';
+                    this.setAttribute('data-action', 'expand');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

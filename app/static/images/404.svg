@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400px" height="300px" viewBox="0 0 400 300" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f8fafc" rx="10" ry="10"/>
+  
+  <!-- 404 Text -->
+  <text x="200" y="140" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#3498db" text-anchor="middle">404</text>
+  
+  <!-- Magnifying glass -->
+  <circle cx="170" cy="230" r="30" fill="none" stroke="#475569" stroke-width="5"/>
+  <line x1="190" y1="250" x2="230" y2="290" stroke="#475569" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Confused face -->
+  <circle cx="270" cy="100" r="40" fill="#f1c40f"/>
+  <circle cx="255" cy="90" r="5" fill="#2c3e50"/>
+  <circle cx="285" cy="90" r="5" fill="#2c3e50"/>
+  <path d="M250,120 Q270,110 290,120" fill="none" stroke="#2c3e50" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Dotted line path -->
+  <path d="M30,200 Q80,120 130,180 T230,150" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="10,5" fill="none"/>
+</svg> 

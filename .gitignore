@@ -1,5 +1,12 @@
 venv/
 __pycache__/
 *.pyc
-*.db
+*.pyo
+*.pyd
 .DS_Store
+Icon?
+*.db
+*.bak
+.idea/
+.vscode/
+.cursor/

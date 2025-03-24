@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{% if user %}Rediger Bruger{% else %}Opret Bruger{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{% if user %}Rediger Bruger{% else %}Opret Bruger{% endif %}</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <div class="admin-section">
+        <form method="post" action="{% if user %}{{ url_for('admin_create_user', user_id=user.id) }}{% else %}{{ url_for('admin_create_user') }}{% endif %}">
+            <div class="form-group">
+                <label for="username">Brugernavn:</label>
+                <input type="text" id="username" name="username" value="{{ user.username if user else '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="{{ user.email if user else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Telefonnummer:</label>
+                <input type="tel" id="phone" name="phone" value="{{ user.phone if user else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Adgangskode:</label>
+                <input type="password" id="password" name="password" {% if not user %}required{% endif %}>
+                {% if user %}<small class="form-hint">Lad feltet være tomt for at beholde den nuværende adgangskode</small>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Bekræft adgangskode:</label>
+                <input type="password" id="confirm_password" name="confirm_password" {% if not user %}required{% endif %}>
+            </div>
+
+            <div class="form-group">
+                <label for="role">Rolle:</label>
+                <select id="role" name="role" class="select2" required>
+                    <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="udlejer" {% if user and user.role == 'udlejer' %}selected{% endif %}>Udlejer</option>
+                    <option value="lejer" {% if user and user.role == 'lejer' %}selected{% endif %}>Lejer</option>
+                    <option value="craftsman" {% if user and user.role == 'craftsman' or user and user.role == 'håndværker' %}selected{% endif %}>Håndværker</option>
+                </select>
+            </div>
+
+            {# Lejemål dropdown - VISES KUN HVIS rollen er 'lejer' #}
+            <div id="unit-selection" class="form-group" {% if user and user.role != 'lejer' %}style="display: none;"{% endif %}>
+                <label for="unit_id">Lejemål:</label>
+                <select id="unit_id" name="unit_id" class="select2">
+                    <option value="">Intet lejemål</option>
+                    {% for unit in units %}
+                        <option value="{{ unit.id }}" {% if user and user.unit_id == unit.id %}selected{% endif %}>{{ unit.address }} ({{ unit.property_name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="button-lookalike">
+                    <i class="fas fa-{% if user %}save{% else %}user-plus{% endif %}"></i> 
+                    {% if user %}Gem ændringer{% else %}Opret bruger{% endif %}
+                </button>
+                <a href="{{ url_for('admin_users') }}" class="button-lookalike button-secondary">
+                    <i class="fas fa-arrow-left"></i> Tilbage til brugeroversigt
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .admin-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-hint {
+        display: block;
+        margin-top: 0.25rem;
+        color: var(--light-text);
+        font-style: italic;
+    }
+    
+    /* Tilføj styling for alle input-felter */
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="tel"],
+    .form-group input[type="password"],
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+    
+    /* Sikrer at Select2 har samme størrelse */
+    .select2-container--default .select2-selection--single {
+        height: auto;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        font-size: 1rem;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: normal;
+        padding: 0;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+        .admin-section {
+            padding: 1.5rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions .button-lookalike {
+            width: 100%;
+            margin-right: 0;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // Initialiser Select2 for rolle-dropdown
+        $('.select2').select2({
+            placeholder: "Vælg",
+            allowClear: true
+        });
+
+        // Vis/skjul lejemål dropdown baseret på valgt rolle
+        $('#role').change(function() {
+            if ($(this).val() == 'lejer') {
+                $('#unit-selection').show();
+            } else {
+                $('#unit-selection').hide();
+                $('#unit_id').val(null).trigger('change'); // Nulstil Select2
+            }
+        });
+        
+        // Initial visning ved indlæsning af siden
+        if ($('#role').val() == 'lejer') {
+            $('#unit-selection').show();
+        } else {
+            $('#unit-selection').hide();
+        }
+    });
+</script>
+{% endblock %}

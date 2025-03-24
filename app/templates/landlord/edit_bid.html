@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Rediger tilbud{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Rediger tilbud</h1>
+    
+    <div class="ticket-details">
+        <h2>Ticket detaljer</h2>
+        <div class="detail-row">
+            <div class="detail-label">Ticket ID:</div>
+            <div class="detail-value">#{{ bid.ticket_id }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Beskrivelse:</div>
+            <div class="detail-value">{{ bid.ticket_beskrivelse }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Status:</div>
+            <div class="detail-value">{{ bid.ticket_status }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Udlejer:</div>
+            <div class="detail-value">{{ bid.udlejer_name }}</div>
+        </div>
+    </div>
+    
+    <div class="bid-form-container">
+        <h2>Rediger dit tilbud</h2>
+        
+        <form method="post" action="{{ url_for('edit_bid', bid_id=bid.id) }}" class="bid-form">
+            <div class="form-group">
+                <label for="amount">Beløb (DKK):</label>
+                <input type="text" id="amount" name="amount" value="{{ bid.amount }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Beskrivelse af tilbud:</label>
+                <textarea id="description" name="description" rows="5" required>{{ bid.description }}</textarea>
+                <div class="form-hint">Beskriv hvad dit tilbud omfatter, materialer, tidsplan, etc.</div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="button-lookalike">Opdater tilbud</button>
+                <a href="{{ url_for('ticket_detail', ticket_id=bid.ticket_id) }}" class="button-lookalike button-secondary">Annuller</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .ticket-details {
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .ticket-details h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    .detail-row {
+        display: flex;
+        margin-bottom: 0.75rem;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        width: 120px;
+        flex-shrink: 0;
+    }
+    
+    .detail-value {
+        flex: 1;
+    }
+    
+    .bid-form-container {
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .bid-form-container h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.2rem;
+    }
+    
+    .bid-form {
+        max-width: 600px;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        font-size: 1rem;
+    }
+    
+    .form-hint {
+        font-size: 0.8rem;
+        color: var(--light-text);
+        margin-top: 0.25rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .detail-row {
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-actions .button-lookalike {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %} 

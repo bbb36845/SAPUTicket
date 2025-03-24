@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Rediger Ejendom{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Rediger Ejendom</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form action="/admin/properties/edit/{{ property.id }}" method="post">
+        <div class="form-group">
+            <label for="name">Ejendomsnavn:</label>
+            <input type="text" id="name" name="name" value="{{ property.name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="owner_id">Ejer:</label>
+            <select id="owner_id" name="owner_id" class="select2" required>
+                {% for user in users %}
+                    <option value="{{ user.id }}" {% if user.id == property.owner_id %}selected{% endif %}>{{ user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="adresse">Adresse:</label>
+            <input type="text" id="adresse" name="adresse" value="{{ property.adresse }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="postnummer">Postnummer:</label>
+            <input type="text" id="postnummer" name="postnummer" value="{{ property.postnummer }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="by">By:</label>
+            <input type="text" id="by" name="by" value="{{ property.by }}" required>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="button-lookalike">
+                <i class="fas fa-save"></i> Gem ændringer
+            </button>
+            {% if flask_login.current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_properties') }}" class="button-lookalike button-secondary">
+                <i class="fas fa-arrow-left"></i> Tilbage til ejendomsoversigt
+            </a>
+            {% else %}
+            <a href="{{ url_for('udlejer_kontrolpanel') }}" class="button-lookalike button-secondary">
+                <i class="fas fa-arrow-left"></i> Tilbage til ejendomsoversigt
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions .button-lookalike {
+            width: 100%;
+            margin-right: 0;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            placeholder: "Vælg ejer",
+            allowClear: true
+        });
+    });
+</script>
+{% endblock %}

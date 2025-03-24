@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Opret Ejendom{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Opret Ejendom</h1>
+    
+    <div class="action-bar top-actions">
+        <a href="{{ url_for('udlejer_kontrolpanel') }}" class="button-lookalike button-secondary">
+            <i class="fas fa-arrow-left"></i> Tilbage til kontrolpanel
+        </a>
+    </div>
+    
+    <div class="admin-section">
+        <form method="post" action="{{ url_for('udlejer_create_property') }}">
+            <div class="form-group">
+                <label for="name">Navn:</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="adresse">Adresse:</label>
+                <input type="text" id="adresse" name="adresse" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="postnummer">Postnummer:</label>
+                <input type="text" id="postnummer" name="postnummer" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="by">By:</label>
+                <input type="text" id="by" name="by" class="form-control" required>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="button-lookalike">
+                    <i class="fas fa-save"></i> Gem Ejendom
+                </button>
+                <a href="{{ url_for('udlejer_kontrolpanel') }}" class="button-lookalike button-secondary">
+                    <i class="fas fa-times"></i> Annuller
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .admin-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .top-actions {
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %} 

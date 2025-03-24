@@ -1,0 +1,586 @@
+{% extends "base.html" %}
+
+{% block title %}Udlejer Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Udlejer Dashboard</h1>
+    
+    <!-- Handlingsknapper -->
+    <div class="action-bar top-actions">
+        <a href="{{ url_for('udlejer_kontrolpanel') }}" class="button-lookalike">
+            <i class="fas fa-cogs"></i> Kontrolpanel
+        </a>
+    </div>
+    
+    <!-- Statistik sektion -->
+    <div class="dashboard-stats">
+        <div class="stats-card">
+            <div class="stats-header">
+                <i class="fas fa-ticket-alt"></i>
+                <h3>Tickets i alt</h3>
+            </div>
+            <div class="stats-value">{{ stats.total_tickets }}</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-header">
+                <i class="fas fa-check-circle"></i>
+                <h3>Gennemsnitlig løsningstid</h3>
+            </div>
+            <div class="stats-value">{{ stats.avg_resolution_days|round(1) }} dage</div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-header">
+                <i class="fas fa-chart-pie"></i>
+                <h3>Status fordeling</h3>
+            </div>
+            <div class="stats-chart">
+                {% for status, count in stats.status_counts.items() %}
+                <div class="chart-item">
+                    <div class="chart-label">{{ status }}</div>
+                    <div class="chart-bar">
+                        <div class="chart-fill" data-count="{{ count }}" data-total="{{ stats.total_tickets }}">
+                            {{ count }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="stats-card">
+            <div class="stats-header">
+                <i class="fas fa-building"></i>
+                <h3>Tickets pr. ejendom</h3>
+            </div>
+            <div class="stats-chart">
+                {% for property, count in stats.property_counts.items() %}
+                <div class="chart-item">
+                    <div class="chart-label">{{ property }}</div>
+                    <div class="chart-bar">
+                        <div class="chart-fill" data-count="{{ count }}" data-total="{{ stats.total_tickets }}">
+                            {{ count }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter sektion -->
+    <div class="filter-section">
+        <form action="{{ url_for('udlejer_dashboard') }}" method="get" class="filter-form">
+            <div class="filter-group">
+                <label for="property">Filtrer efter ejendom:</label>
+                <select name="property" id="property" class="filter-select select2">
+                    <option value="">Alle ejendomme</option>
+                    {% for property_name, count in stats.property_counts.items() %}
+                        <option value="{{ property_name }}" {% if current_property == property_name %}selected{% endif %}>
+                            {{ property_name }} ({{ count }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="status">Filtrer efter status:</label>
+                <select name="status" id="status" class="filter-select select2">
+                    <option value="">Alle status</option>
+                    {% for status in statuses %}
+                        <option value="{{ status.status }}" {% if current_status == status.status %}selected{% endif %}>
+                            {{ status.status }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-actions">
+                <button type="submit" class="button-lookalike">Filtrer</button>
+                {% if current_property or current_status %}
+                    <a href="{{ url_for('udlejer_dashboard') }}" class="button-lookalike button-secondary">Nulstil filter</a>
+                {% endif %}
+            </div>
+        </form>
+        
+        <div class="filter-info">
+            {% if current_property or current_status %}
+                <p>
+                    Viser {{ tickets|length }} tickets
+                    {% if current_property %}for ejendom: <strong>{{ current_property }}</strong>{% endif %}
+                    {% if current_status %}med status: <strong>{{ current_status }}</strong>{% endif %}
+                </p>
+            {% else %}
+                <p>Viser alle {{ tickets|length }} tickets</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Ticket tabel -->
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Detaljer</th>
+                    <th>Status</th>
+                    <th>
+                        <a href="{{ url_for('udlejer_dashboard', status=current_status, sort='created_at', dir='desc' if sort_by == 'created_at' and sort_dir == 'asc' else 'asc') }}" class="sort-link">
+                            Dato
+                            {% if sort_by == 'created_at' %}
+                                <i class="fas fa-sort-{{ 'up' if sort_dir == 'asc' else 'down' }}"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>Handlinger</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr>
+                    <td data-label="Ticket" class="ticket-main-cell">
+                        <div class="ticket-main-info">
+                            <div class="ticket-id-and-parties">
+                                <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="ticket-link">#{{ ticket.id }}</a>
+                                <span class="ticket-party"><i class="fas fa-user-tie"></i> {{ ticket.udlejer_name if ticket.udlejer_name else ticket.udlejer }}</span>
+                                <span class="ticket-party"><i class="fas fa-user"></i> {{ ticket.lejer }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Detaljer">
+                        <div class="description-container">
+                            <div class="description-short">
+                                {{ ticket.beskrivelse|truncate(50) }}
+                                {% if ticket.beskrivelse|length > 50 %}
+                                    <button class="toggle-description" data-action="expand"><i class="fas fa-chevron-down"></i> Vis mere</button>
+                                {% endif %}
+                            </div>
+                            <div class="description-full" style="display: none;">
+                                {{ ticket.beskrivelse }}
+                                <button class="toggle-description" data-action="collapse"><i class="fas fa-chevron-up"></i> Vis mindre</button>
+                            </div>
+                        </div>
+                        <div class="ticket-property">
+                            <i class="fas fa-building"></i> {{ ticket.property_name }}
+                        </div>
+                        <div class="ticket-unit">
+                            <i class="fas fa-home"></i> {{ ticket.unit_address }}
+                        </div>
+                    </td>
+                    <td data-label="Status">
+                        {% set status_class = "status-other" %}
+                        {% if ticket.status|lower == "oprettet" %}
+                            {% set status_class = "status-oprettet" %}
+                        {% elif ticket.status|lower == "igangsat" %}
+                            {% set status_class = "status-igangsat" %}
+                        {% elif ticket.status|lower == "afventer" %}
+                            {% set status_class = "status-afventer" %}
+                        {% elif ticket.status|lower == "afsluttet" %}
+                            {% set status_class = "status-afsluttet" %}
+                        {% elif ticket.status|lower == "lukket" %}
+                            {% set status_class = "status-lukket" %}
+                        {% endif %}
+                        <span class="status-badge {{ status_class }}">{{ ticket.status }}</span>
+                    </td>
+                    <td data-label="Dato">
+                        <div class="ticket-date">
+                            <i class="fas fa-calendar-alt"></i> {{ ticket.created_at|replace(' ', ' kl. ')|replace('-', '/') }}
+                        </div>
+                    </td>
+                    <td data-label="Handlinger">
+                        <div class="action-buttons">
+                            <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="button-lookalike view-button">
+                                <i class="fas fa-eye"></i> Vis
+                            </a>
+                            <a href="{{ url_for('edit_ticket', ticket_id=ticket.id) }}" class="button-lookalike edit-button">
+                                <i class="fas fa-edit"></i> Rediger
+                            </a>
+                            <form action="{{ url_for('delete_ticket', ticket_id=ticket.id) }}" method="post" class="inline-form" onsubmit="return confirm('Er du sikker på, at du vil slette denne ticket?');">
+                                <button type="submit" class="button-lookalike delete-button">
+                                    <i class="fas fa-trash"></i> Slet
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if not tickets %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-ticket-alt"></i>
+        </div>
+        <h3>Ingen tickets fundet</h3>
+        <p>Der er ingen tickets, der matcher dine filtreringskriterier.</p>
+        {% if current_property or current_status %}
+            <a href="{{ url_for('udlejer_dashboard') }}" class="button-lookalike">Nulstil filtre</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Dashboard styling */
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stats-card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .stats-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .stats-header i {
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        margin-right: 10px;
+    }
+    
+    .stats-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        color: #666;
+    }
+    
+    .stats-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+    
+    .stats-chart {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .chart-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chart-label {
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    
+    .chart-bar {
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        height: 20px;
+        overflow: hidden;
+    }
+    
+    .chart-fill {
+        height: 100%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        transition: width 0.5s ease;
+        min-width: 30px;
+    }
+    
+    /* Filter styling */
+    .filter-section {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: flex-end;
+    }
+    
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    
+    .filter-info {
+        margin-top: 15px;
+        font-style: italic;
+        color: #666;
+    }
+    
+    /* Ticket table styling */
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .table th, .table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .table th {
+        background-color: #f9f9f9;
+        font-weight: 600;
+    }
+    
+    .table tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .ticket-main-info {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .ticket-id-and-parties {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    
+    .ticket-link {
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    
+    .ticket-party {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .ticket-party i {
+        margin-right: 5px;
+        color: var(--primary-color);
+    }
+    
+    .ticket-property, .ticket-unit {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .ticket-property i, .ticket-unit i {
+        margin-right: 5px;
+        color: var(--primary-color);
+    }
+    
+    .ticket-date {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .ticket-date i {
+        margin-right: 5px;
+        color: var(--primary-color);
+    }
+    
+    /* Status badges og knap-styling er flyttet til base.html */
+    
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .description-container {
+        position: relative;
+    }
+    
+    .toggle-description {
+        background: none;
+        border: none;
+        color: var(--primary-color);
+        cursor: pointer;
+        font-size: 0.8rem;
+        padding: 0;
+        margin-top: 5px;
+    }
+    
+    .toggle-description:hover {
+        text-decoration: underline;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+    
+    .empty-state-icon {
+        font-size: 3rem;
+        color: #ccc;
+        margin-bottom: 20px;
+    }
+    
+    .empty-state h3 {
+        margin-bottom: 10px;
+        color: #666;
+    }
+    
+    .empty-state p {
+        color: #888;
+        margin-bottom: 20px;
+    }
+    
+    .sort-link {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: inherit;
+        text-decoration: none;
+    }
+    
+    .sort-link:hover {
+        color: var(--primary-color);
+    }
+    
+    /* Responsive styling */
+    @media (max-width: 768px) {
+        .filter-form {
+            flex-direction: column;
+        }
+        
+        .filter-group {
+            width: 100%;
+        }
+        
+        .table, .table thead, .table tbody, .table th, .table td, .table tr {
+            display: block;
+        }
+        
+        .table thead tr {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+        }
+        
+        .table tr {
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table td {
+            border: none;
+            border-bottom: 1px solid #eee;
+            position: relative;
+            padding-left: 50%;
+            text-align: right;
+        }
+        
+        .table td:before {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 45%;
+            padding-right: 10px;
+            white-space: nowrap;
+            font-weight: bold;
+            text-align: left;
+            content: attr(data-label);
+        }
+        
+        .table td:last-child {
+            border-bottom: 0;
+        }
+        
+        td[data-label="Handlinger"] {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser Select2 for filter dropdowns
+        $('.select2').select2({
+            placeholder: function() {
+                return $(this).data('placeholder') || "Vælg...";
+            },
+            allowClear: true,
+            width: '100%'
+        });
+        
+        // Sæt specifikke placeholders
+        $('#property').data('placeholder', 'Vælg ejendom');
+        $('#status').data('placeholder', 'Vælg status');
+        
+        // Automatisk submit ved ændring af Select2
+        $('.filter-select').on('change', function() {
+            $(this).closest('form').submit();
+        });
+        
+        // Toggle beskrivelse
+        document.querySelectorAll('.toggle-description').forEach(button => {
+            button.addEventListener('click', function() {
+                const container = this.closest('.description-container');
+                const shortDesc = container.querySelector('.description-short');
+                const fullDesc = container.querySelector('.description-full');
+                const action = this.getAttribute('data-action');
+                
+                if (action === 'expand') {
+                    shortDesc.style.display = 'none';
+                    fullDesc.style.display = 'block';
+                    this.innerHTML = '<i class="fas fa-chevron-up"></i> Vis mindre';
+                    this.setAttribute('data-action', 'collapse');
+                } else {
+                    shortDesc.style.display = 'block';
+                    fullDesc.style.display = 'none';
+                    this.innerHTML = '<i class="fas fa-chevron-down"></i> Vis mere';
+                    this.setAttribute('data-action', 'expand');
+                }
+            });
+        });
+        
+        // Beregn bredden af chart-fill elementerne
+        document.querySelectorAll('.chart-fill').forEach(element => {
+            const count = parseInt(element.getAttribute('data-count'));
+            const total = parseInt(element.getAttribute('data-total'));
+            
+            if (total > 0) {
+                const percentage = (count / total) * 100;
+                element.style.width = percentage + '%';
+            } else {
+                element.style.width = '0%';
+            }
+        });
+    });
+</script>
+{% endblock %}

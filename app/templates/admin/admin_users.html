@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Administrer Brugere{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Administrer Brugere</h1>
+
+    <div class="action-bar top-actions">
+        <a href="{{ url_for('admin_create_user') }}" class="button-lookalike">
+            <i class="fas fa-user-plus"></i> Opret bruger
+        </a>
+        <a href="{{ url_for('admin') }}" class="button-lookalike button-secondary">
+            <i class="fas fa-arrow-left"></i> Tilbage til admin panel
+        </a>
+    </div>
+
+    <div class="admin-section">
+        <h2>Filtrer og Søg</h2>
+        <form method="GET" action="{{ url_for('admin_users') }}" class="filter-form">
+            <div class="form-group">
+                <label for="role">Filtrer efter Rolle:</label>
+                <select id="role" name="role" class="select2" onchange="this.form.submit()">
+                    <option value="" {% if not selected_role %}selected{% endif %}>Alle roller</option>
+                    <option value="admin" {% if selected_role == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="udlejer" {% if selected_role == 'udlejer' %}selected{% endif %}>Udlejer</option>
+                    <option value="lejer" {% if selected_role == 'lejer' %}selected{% endif %}>Lejer</option>
+                    <option value="craftsman" {% if selected_role == 'craftsman' or selected_role == 'håndværker' %}selected{% endif %}>Håndværker</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="search">Søg:</label>
+                <div class="search-group">
+                    <input type="text" id="search" name="search" value="{{ search_term if search_term else '' }}">
+                    <div class="search-actions">
+                        <button type="submit" class="button-lookalike">
+                            <i class="fas fa-search"></i> Søg
+                        </button>
+                        <button type="button" class="button-lookalike button-secondary" data-url="{{ url_for('admin_users') }}" id="resetButton">
+                            <i class="fas fa-undo"></i> Nulstil
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="admin-section">
+        <h2>Brugere</h2>
+        <table id="userTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Brugernavn</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th>Rolle</th>
+                    <th>Lejemål</th>
+                    <th>Handlinger</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td data-label="ID">{{ user.id }}</td>
+                    <td data-label="Brugernavn">{{ user.username }}</td>
+                    <td data-label="Email">{{ user.email if user.email else 'Ikke angivet' }}</td>
+                    <td data-label="Telefon">{{ user.phone if user.phone else 'Ikke angivet' }}</td>
+                    <td data-label="Rolle">
+                        <span class="role-badge role-{{ user.role }}">
+                            {% if user.role == 'craftsman' %}
+                                Håndværker
+                            {% else %}
+                                {{ user.role }}
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td data-label="Lejemål">
+                        {% if user.unit_id %}
+                            {% for unit in units %}
+                                {% if unit.id == user.unit_id %}
+                                    {{ unit.address }} ({{ unit.property_name }})
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            Intet lejemål
+                        {% endif %}
+                    </td>
+                    <td data-label="Handlinger">
+                        <div class="action-buttons">
+                            <div class="action-button-wrapper">
+                                <a href="{{ url_for('admin_create_user', user_id=user.id) }}" class="button-lookalike action-button">
+                                    <i class="fas fa-edit"></i> Rediger
+                                </a>
+                            </div>
+                            <div class="action-button-wrapper">
+                                <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="post" style="width: 100%; height: 100%; margin: 0;">
+                                    <button type="submit" onclick="return confirm('Er du sikker på, at du vil slette denne bruger?')" class="button-lookalike button-secondary action-button">
+                                        <i class="fas fa-trash"></i> Slet
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .admin-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .admin-section h2 {
+        margin-top: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .top-actions {
+        margin-bottom: 1.5rem;
+    }
+    
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+    
+    .search-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .search-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .role-admin {
+        background-color: var(--primary-light);
+        color: var(--primary-hover);
+    }
+    
+    .role-udlejer {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+    }
+    
+    .role-lejer {
+        background-color: rgba(245, 158, 11, 0.2);
+        color: var(--warning-color);
+    }
+    
+    .role-håndværker, .role-craftsman {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--error-color);
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .action-button-wrapper {
+        flex: 1;
+        display: flex;
+        width: 100%;
+    }
+    
+    .action-button {
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .action-button i {
+        margin-right: 0.5rem;
+    }
+    
+    @media (min-width: 768px) {
+        .action-buttons {
+            flex-direction: row;
+        }
+        
+        .action-button-wrapper {
+            width: 50%;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .admin-section {
+            padding: 1.5rem;
+        }
+        
+        .action-bar,
+        .filter-form,
+        .search-actions {
+            flex-direction: column;
+        }
+        
+        .action-bar .button-lookalike,
+        .search-actions .button-lookalike {
+            width: 100%;
+            margin-right: 0;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // Initialiser Select2 for rolle-dropdown
+        $('.select2').select2({
+            placeholder: "Vælg rolle",
+            allowClear: true
+        });
+        
+        // Nulstil-knap funktionalitet
+        document.getElementById("resetButton").addEventListener("click", function() {
+            window.location.href = this.dataset.url;
+        });
+    });
+</script>
+{% endblock %}

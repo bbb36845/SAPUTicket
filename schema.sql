@@ -21,6 +21,9 @@ CREATE TABLE properties (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     owner_id INTEGER NOT NULL,
+    adresse TEXT NOT NULL,
+    postnummer TEXT NOT NULL,
+    by TEXT NOT NULL,
     FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 

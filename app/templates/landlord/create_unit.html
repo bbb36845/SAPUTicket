@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Opret Lejemål{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Opret Lejemål</h1>
+    
+    <div class="action-bar top-actions">
+        <a href="{{ url_for('udlejer_kontrolpanel') }}" class="button-lookalike button-secondary">
+            <i class="fas fa-arrow-left"></i> Tilbage til kontrolpanel
+        </a>
+    </div>
+    
+    <div class="admin-section">
+        {% if properties %}
+        <form method="post" action="{{ url_for('create_unit') }}">
+            <div class="form-group">
+                <label for="address">Adresse:</label>
+                <input type="text" id="address" name="address" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="property_id">Ejendom:</label>
+                <select id="property_id" name="property_id" class="form-control select2" required>
+                    <option value="">Vælg ejendom</option>
+                    {% for property in properties %}
+                    <option value="{{ property.id }}">{{ property.name }} ({{ property.adresse }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="button-lookalike">
+                    <i class="fas fa-save"></i> Gem Lejemål
+                </button>
+                <a href="{{ url_for('udlejer_kontrolpanel') }}" class="button-lookalike button-secondary">
+                    <i class="fas fa-times"></i> Annuller
+                </a>
+            </div>
+        </form>
+        {% else %}
+        <div class="empty-state">
+            <p>Du har ingen ejendomme endnu. Du skal oprette mindst én ejendom, før du kan oprette et lejemål.</p>
+            <a href="{{ url_for('udlejer_create_property') }}" class="button-lookalike">
+                <i class="fas fa-plus"></i> Opret Ejendom
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .admin-section {
+        margin-bottom: 3rem;
+        background-color: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .top-actions {
+        margin-bottom: 1.5rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .empty-state p {
+        margin-bottom: 1.5rem;
+        color: var(--light-text);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser Select2
+        $('.select2').select2({
+            placeholder: "Vælg ejendom",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
+{% endblock %} 

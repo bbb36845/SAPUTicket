@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Min Profil - SAPUTicket{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Min Profil</h2>
+    </div>
+    
+    <form method="POST" action="{{ url_for('auth.profile') }}">
+        <div class="row" style="display: flex; flex-wrap: wrap; margin: 0 -10px;">
+            <div class="col" style="flex: 1; min-width: 300px; padding: 0 10px;">
+                <h3>Personlige oplysninger</h3>
+                
+                <div class="form-group">
+                    <label for="first_name" class="form-label">Fornavn</label>
+                    <input type="text" id="first_name" name="first_name" class="form-control" value="{{ user.first_name }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="last_name" class="form-label">Efternavn</label>
+                    <input type="text" id="last_name" name="last_name" class="form-control" value="{{ user.last_name }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email" class="form-label">E-mail</label>
+                    <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone" class="form-label">Telefonnummer</label>
+                    <input type="tel" id="phone" name="phone" class="form-control" value="{{ user.phone }}">
+                </div>
+            </div>
+            
+            <div class="col" style="flex: 1; min-width: 300px; padding: 0 10px;">
+                <h3>Konto oplysninger</h3>
+                
+                <div class="form-group">
+                    <label for="username" class="form-label">Brugernavn</label>
+                    <input type="text" id="username" name="username" class="form-control" value="{{ user.username }}" readonly>
+                    <small class="form-text text-muted">Brugernavnet kan ikke ændres.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="role" class="form-label">Rolle</label>
+                    <input type="text" id="role" class="form-control" value="{{ user.role_display }}" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="created_at" class="form-label">Oprettet den</label>
+                    <input type="text" id="created_at" class="form-control" value="{{ user.created_at|date('%d-%m-%Y') }}" readonly>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <button type="submit" class="btn btn-primary">Opdater profil</button>
+            <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline" style="margin-left: 10px;">Skift adgangskode</a>
+        </div>
+    </form>
+</div>
+{% endblock %} 
